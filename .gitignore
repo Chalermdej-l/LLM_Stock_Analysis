@@ -1,0 +1,7 @@
+.env
+*/**/*.ipynb
+*/**/*.jpg
+*.ipynb
+.cache
+*/**/__pycache__
+*.jpg
