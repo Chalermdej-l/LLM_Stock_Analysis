@@ -38,7 +38,25 @@ def load_cik_list(file_path: str) -> Dict:
 def process_sec_data(cik_list: Dict) -> pd.DataFrame:
     """Process SEC data using SecProcessor."""
     processor = SecProcessor(cik_list)
-    return processor.process_all_funds()
+    df = processor.process_all_funds()
+    
+    # Clean and convert data types
+    for column in df.columns:
+        if df[column].dtype == 'object':
+            # If the column contains lists, join them into strings
+            df[column] = df[column].apply(lambda x: ''.join(map(str, x)) if isinstance(x, list) else x)
+    
+    # Convert 'prn_amt' to integer
+    if 'prn_amt' in df.columns:
+        df['prn_amt'] = pd.to_numeric(df['prn_amt'], errors='coerce').astype('Int64')
+    
+    # Convert other numeric columns as needed
+    numeric_columns = ['value', 'voting_sole', 'voting_shared', 'voting_none']
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
+    df = df.drop_duplicates()
+    return df
 
 def insert_data_to_sql(df: pd.DataFrame, env_vars: Dict[str, str]) -> None:
     """Insert data into SQL database."""

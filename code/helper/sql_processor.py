@@ -1,8 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, BigInteger
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, BigInteger, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import TypeEngine
-from sqlalchemy import inspect, text
 import pandas as pd
 
 class CloudSQLDatabase:
@@ -36,10 +35,32 @@ class CloudSQLDatabase:
         self.Base.metadata.create_all(self.engine)
         print(f"Table '{table_name}' created successfully")
 
+    def update_table_schema(self, table_name, df):
+        if not self.table_exists(table_name):
+            print(f"Table '{table_name}' does not exist.")
+            return
+
+        inspector = inspect(self.engine)
+        existing_columns = inspector.get_columns(table_name)
+        existing_column_names = {col['name'] for col in existing_columns}
+
+        new_columns = []
+        for column in df.columns:
+            if column not in existing_column_names:
+                new_columns.append((column, self._get_sqlalchemy_type(df[column].dtype)))
+
+        if new_columns:
+            with self.engine.connect() as conn:
+                for column_name, column_type in new_columns:
+                    alter_query = text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {column_type.__visit_name__.upper()}')
+                    conn.execute(alter_query)
+            print(f"Table '{table_name}' updated with new columns: {[col[0] for col in new_columns]}")
+
     def _get_sqlalchemy_type(self, dtype):
         if self.big_flag:
             dtype_map = {
                 'int64': BigInteger,
+                'Int64': BigInteger,
                 'float64': Float,
                 'object': String,
                 'bool': Boolean,
@@ -48,6 +69,7 @@ class CloudSQLDatabase:
         else:
             dtype_map = {
                 'int64': Integer,
+                'Int64': Integer,
                 'float64': Float,
                 'object': String,
                 'bool': Boolean,
@@ -61,6 +83,19 @@ class CloudSQLDatabase:
             return
 
         try:
+            # Preprocess the DataFrame
+            for column in data.columns:
+                if data[column].dtype == 'object':
+                    # If the column contains lists, join them into strings
+                    data[column] = data[column].apply(lambda x: ','.join(map(str, x)) if isinstance(x, list) else x)
+                
+                # Convert NaN to None for SQL compatibility
+                data[column] = data[column].where(pd.notnull(data[column]), None)
+
+            # Convert 'prn_amt' to integer if it's not already
+            if 'prn_amt' in data.columns:
+                data['prn_amt'] = pd.to_numeric(data['prn_amt'], errors='coerce').astype('Int64')
+
             data.to_sql(table_name, self.engine, if_exists='append', index=False)
             print(f"Data inserted successfully into '{table_name}'")
         except Exception as e:
@@ -68,10 +103,6 @@ class CloudSQLDatabase:
             self.session.rollback()
 
     def fetch_data(self, query):
-        # if not self.table_exists(table_name):
-        #     print(f"Table '{table_name}' does not exist.")
-        #     return None
-
         try:
             query = text(query)
             df = pd.read_sql(query, self.engine)

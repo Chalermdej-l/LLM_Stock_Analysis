@@ -1,11 +1,11 @@
-{
-    "screen_bigbet": "SELECT distinct company, percent_owned, count FROM public.dataroma_bigbets WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
-    "insider_buying_activity": "SELECT distinct symbol, relationship, purchase_sale, amount, count FROM public.dataroma_insider_buy WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
-    "insider_buying_activity_with_superinvestor": "SELECT distinct ticker, count FROM public.dataroma_insider_super WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
+{   
+    "insider_buying_activity": "SELECT distinct symbol as ticker, relationship, amount, count, CAST(trans_date AS DATE) FROM public.dataroma_insider_buy WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1,3",
+    "insider_buying_activity_with_superinvestor": "SELECT distinct ticker, count, total_amount FROM public.dataroma_insider_super WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
+    "custom_insider":"SELECT distinct ticker, cast(date_filling as date) as date_filling , sum(cast(total_value as int)) as total_value FROM public.dataroma_screen_insider WHERE CAST(date_insert AS DATE) = CURRENT_DATE group by ticker,date_filling order by 1,2;",
+    "screen_bigbet": "SELECT distinct ticker, percent_owned, count FROM public.dataroma_bigbets WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
     "52week_lows":"SELECT distinct  ticker, percent_owned FROM public.dataroma_low WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
-    "custom_insider":"SELECT distinct ticker,   sum(cast(total_value as int)) as total_value FROM public.dataroma_screen_insider WHERE CAST(date_insert AS DATE) = CURRENT_DATE group by ticker order by 1;",
-    "custom_screen":"SELECT distinct id, ticker, sector, industry, market_cap FROM public.finviz_screen WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
-    "screen_magic":"SELECT distinct ticker FROM public.magic_screen WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;" ,
-    "13f_filing":"SELECT cm.ticker , count(*) as count ,sum(value) as value FROM public.sec_13f s inner join cusip_map cm  on s.cusip  = cm.cusip WHERE CAST(date_insert AS DATE) > CURRENT_DATE-60 group  by cm.ticker order by 1;"    
-}
+    "13f_filing":"SELECT cm.ticker, initcap(trim(left(fund_name, length(fund_name) - 21))) as fund_name, round(max(prn_amt) * 100.0 / sum(max(prn_amt)) OVER (PARTITION BY initcap(trim(left(fund_name, length(fund_name) - 21)))), 4) FROM  public.sec_13f s INNER JOIN cusip_map cm ON s.cusip = cm.cusip WHERE CAST(trans_date AS DATE) > CURRENT_DATE - 60 and cast(date_insert as date) = CURRENT_DATE GROUP BY cm.ticker, s.fund_name ORDER BY 2, 3 desc",
+    "custom_screen":"SELECT distinct ticker, sector, industry, market_cap, pe FROM public.finviz_screen WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
+    "screen_magic":"SELECT distinct ticker, market_cap FROM public.magic_screen WHERE CAST(date_insert AS DATE) = CURRENT_DATE  order by 1;"
+   }
 

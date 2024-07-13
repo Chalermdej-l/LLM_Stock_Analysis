@@ -9,7 +9,7 @@ from requests.exceptions import RequestException
 from ratelimit import limits, sleep_and_retry
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import datetime
-
+pd.options.mode.chained_assignment = None 
 class SecProcessor:
     BASE_URL = 'https://www.sec.gov'
     HEADERS = {
@@ -56,28 +56,48 @@ class SecProcessor:
             return None
 
         column = ['name_of_issuer', 'title_of_class', 'cusip', 'figi', 'value', 'prn_amt', 'prn',
-                  'put_call', 'discretion', 'manager', 'voting_sole', 'voting_shared', 'voting_none']
+                'put_call', 'discretion', 'manager', 'voting_sole', 'voting_shared', 'voting_none']
         
         column_2 = ['name_of_issuer', 'title_of_class', 'cusip', 'value', 'prn_amt', 'prn',
-                  'put_call', 'discretion', 'manager', 'voting_sole', 'voting_shared', 'voting_none']
+                'put_call', 'discretion', 'manager', 'voting_sole', 'voting_shared', 'voting_none']
         
-        col_int= ['value','prn_amt','voting_sole','voting_shared','voting_none']
+        col_int = ['value', 'prn_amt', 'voting_sole', 'voting_shared', 'voting_none']
 
-        df = pd.read_html(StringIO(str(tables)))[0].iloc[3:]
+        # Parse the HTML table into a DataFrame
+        df_list = pd.read_html(StringIO(str(tables)))
+        if not df_list or len(df_list) < 1:
+            self.logger.warning("No tables found or table parsing failed.")
+            return None
+        
+        df = df_list[0].iloc[3:]  # Skip header rows if necessary
         col_length = len(df.columns)
 
         if col_length == 13:
-            df.columns = column 
+            df.columns = column
         else:
             df.columns = column_2
             df['figi'] = np.nan
             df = df[column]
         
-        df['date_insert'] = datetime.datetime.strptime(date_part, '%Y-%m-%d')
-        df[col_int] = df[col_int].apply(pd.to_numeric, errors='coerce')
+        df['trans_date'] = datetime.datetime.strptime(date_part, '%Y-%m-%d')
+        df[col_int] = df[col_int].apply(pd.to_numeric, errors='coerce')        
+
+        # Data cleaning: Handle concatenated values
+        for col in df.columns:
+            df[col] = df[col].apply(lambda x: x if pd.isna(x) else str(x).replace('\n', ' '))
+
+        # Ensure no concatenated rows
+        def split_concat_rows(value):
+            if isinstance(value, str) and value.isdigit() and len(value) > 3:
+                return list(value)
+            return [value]
+        
+        df = df.map(split_concat_rows).explode('value')
+        df['date_insert'] = datetime.datetime.today().strftime('%Y-%m-%d')
 
 
         return df
+
 
     def fetch_fund_data(self, cik):
         self.logger.info(f'Fetching data for CIK {cik}')

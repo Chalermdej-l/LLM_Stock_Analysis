@@ -59,7 +59,7 @@ class MagicFormulaInvesting:
             table_list.append({
                 'company': columns[0].text.strip(),
                 'ticker': columns[1].text.strip(),
-                'marketCap': columns[2].text.strip()
+                'market_cap': columns[2].text.strip()
             })
         
         df = pd.DataFrame(table_list)

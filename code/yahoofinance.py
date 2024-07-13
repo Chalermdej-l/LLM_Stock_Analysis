@@ -1,9 +1,9 @@
 import json
 import logging
 from typing import Dict
-
 from dotenv import load_dotenv
 import os
+import sys
 from helper.yahoo_processor import StockData
 from helper.sql_processor import CloudSQLDatabase
 
@@ -22,7 +22,7 @@ def load_environment_variables() -> Dict[str, str]:
         'sql_host': os.getenv('SQL_HOST')
     }
 
-def main():
+def main(stock_symbol_list: list):
     """
     Main function to load environment variables, initialize SQL helper and Finviz scraper, and update the database.
     """
@@ -40,25 +40,28 @@ def main():
             big_flag=True
         )
         
-            # Example usage
-        ticker = 'MSFT'
-        stock_data = StockData(ticker)
-        all_data = stock_data.fetch_all_data()
+        stock_symbol_list = list(stock_symbol_list)
+        for stock_symbol in stock_symbol_list:
+            # Fetch and update stock data
+            stock_data = StockData(stock_symbol)
+            all_data = stock_data.fetch_all_data()
 
-        for key, df in all_data.items():
-
-            if not(df.empty):
-                
-                # Table name for SQL database
-                table_name = 'yahoofinance_' + key
-                # Create table and insert data
-                sql_helper.create_table(table_name, df.dtypes)
-                sql_helper.insert_data(table_name, df)
-                
-        logger.info("All tables updated successfully")
+            for key, df in all_data.items():
+                if not df.empty:
+                    table_name = 'yahoofinance_' + key
+                    sql_helper.create_table(table_name, df.dtypes)
+                    sql_helper.update_table_schema(table_name, df)
+                    sql_helper.insert_data(table_name, df)
+                    
+            logger.info("All tables updated successfully")
     
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) != 2:
+        logger.error("Usage: python script.py [<stock_symbol>]")
+        sys.exit(1)
+    
+    stock_symbol = sys.argv[1]
+    main(stock_symbol)

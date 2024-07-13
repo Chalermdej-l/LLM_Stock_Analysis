@@ -2,7 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import datetime
+
 pd.options.mode.chained_assignment = None 
+
 class DataromaScraper:
     def __init__(self):
         self.base_url = 'https://www.dataroma.com'
@@ -51,7 +53,6 @@ class DataromaScraper:
 
         df_insider_buy = pd.DataFrame(table_data, columns=columns)
         df_insider_buy = df_insider_buy.query("symbol != ''")
-        
 
         df_insider_buy['relationship'] = df_insider_buy['relationship'].str.title() \
             .str.replace('Chief Accounting Officer', 'CAO') \
@@ -63,8 +64,16 @@ class DataromaScraper:
         df_insider_buy['purchase_sale'] = df_insider_buy['purchase_sale'].str.replace('Purchase', 'Buy')
         df_insider_buy['amount'] = df_insider_buy['amount'].str.replace(',', '').astype('int')
         df_insider_buy['count'] = 1
-        df_insider_buy = df_insider_buy.groupby(['symbol', 'relationship', 'trans_date', 'purchase_sale']).sum().reset_index()
         df_insider_buy['trans_date'] = pd.to_datetime(df_insider_buy['trans_date'], format='%d %b %Y')
+        
+        # Group by all relevant columns except 'amount' and 'shares'
+        groupby_columns = ['symbol', 'relationship', 'trans_date', 'purchase_sale', 'price', 'security', 'reporting_name', 'di']
+        df_insider_buy = df_insider_buy.groupby(groupby_columns).agg({
+            'amount': 'sum',
+            'shares': 'sum',
+            'count': 'sum'
+        }).reset_index()
+        
         df_insider_buy['date_insert'] = datetime.datetime.today().strftime('%Y-%m-%d')
         return df_insider_buy
 
@@ -82,26 +91,35 @@ class DataromaScraper:
         soup = BeautifulSoup(result.text, 'html.parser')
         tables = soup.find_all('table')
 
-        df_insider_buy_home = pd.DataFrame(self.scrape_table(tables[0]), columns=['date', 'company', 'total_value', 'price'])
+        df_insider_buy_home = pd.DataFrame(self.scrape_table(tables[0]), columns=['date_filling', 'company', 'total_value', 'price'])
         df_insider_buy_home['ticker'] = df_insider_buy_home['company'].str.split('-').str[0].str.strip()
+        df_insider_buy_home['company'] = df_insider_buy_home['company'].str.split('-').str[1].str.strip()
 
         df_insider_buy_home['total_value'] = df_insider_buy_home['total_value'].str.replace(',', '').astype('int')
-        df_insider_buy_home = df_insider_buy_home.groupby(['ticker', 'date']).sum().reset_index()
+        df_insider_buy_home['date_filling'] = df_insider_buy_home['date_filling'] + ' ' + datetime.date.today().strftime('%Y')
+        df_insider_buy_home['date_filling'] = pd.to_datetime(df_insider_buy_home['date_filling'], format='%d %b %Y')
+        # Group by all relevant columns
+        groupby_columns = ['ticker', 'date_filling', 'company', 'price']
+        df_insider_buy_home = df_insider_buy_home.groupby(groupby_columns).agg({
+            'total_value': 'sum'
+        }).reset_index()
+        
         df_insider_buy_home['date_insert'] = datetime.datetime.today().strftime('%Y-%m-%d')
+        df_insider_buy_home['total_value'] = df_insider_buy_home['total_value'].astype('int')
 
         df_bigbets = pd.DataFrame(self.scrape_table(tables[2]), columns=['company', 'percent_owned', 'count'])
         df_bigbets['ticker'] = df_bigbets['company'].str.split('-').str[0].str.strip()
-
+        df_bigbets['company'] = df_bigbets['company'].str.split('-').str[1].str.strip()
         df_bigbets['date_insert'] = datetime.datetime.today().strftime('%Y-%m-%d')
 
         df_low = pd.DataFrame(self.scrape_table(tables[3]), columns=['company', 'percent_owned'])
         df_low['ticker'] = df_low['company'].str.split('-').str[0].str.strip()
-
+        df_low['company'] = df_low['company'].str.split('-').str[1].str.strip()
         df_low['date_insert'] = datetime.datetime.today().strftime('%Y-%m-%d')
 
-        df_insider_super = pd.DataFrame(self.scrape_table(tables[4]), columns=['company', 'count', 'TotalAmount'])
+        df_insider_super = pd.DataFrame(self.scrape_table(tables[4]), columns=['company', 'count', 'total_amount'])
         df_insider_super['ticker'] = df_insider_super['company'].str.split('-').str[0].str.strip()
-
+        df_insider_super['company'] = df_insider_super['company'].str.split('-').str[1].str.strip()
         df_insider_super['date_insert'] = datetime.datetime.today().strftime('%Y-%m-%d')
     
         return df_insider_buy_home, df_bigbets, df_low, df_insider_super
