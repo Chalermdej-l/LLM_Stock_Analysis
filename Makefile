@@ -9,3 +9,6 @@ get_screen_data:
 	python code/magic.py	
 	python code/sec_13f.py
 	# python code/yahoofinance.py
+
+llm_process:
+	python code/llm.py

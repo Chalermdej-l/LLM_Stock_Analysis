@@ -39,29 +39,34 @@ def main(stock_symbol_list: list):
             env_vars['sql_database'],
             big_flag=True
         )
+
+        # Set to track created tables
+        created_tables = set()
         
-        stock_symbol_list = list(stock_symbol_list)
         for stock_symbol in stock_symbol_list:
             # Fetch and update stock data
             stock_data = StockData(stock_symbol)
             all_data = stock_data.fetch_all_data()
+            logger.info('Process data for {}'.format(stock_symbol))
 
             for key, df in all_data.items():
                 if not df.empty:
                     table_name = 'yahoofinance_' + key
-                    sql_helper.create_table(table_name, df.dtypes)
+                    if table_name not in created_tables:
+                        sql_helper.create_table(table_name, df.dtypes)
+                        created_tables.add(table_name)
                     sql_helper.update_table_schema(table_name, df)
                     sql_helper.insert_data(table_name, df)
                     
-            logger.info("All tables updated successfully")
+            logger.info(f"Tables for {stock_symbol} updated successfully")
     
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        logger.error("Usage: python script.py [<stock_symbol>]")
+    if len(sys.argv) < 2:
+        logger.error("Usage: python script.py <stock_symbol_1> [<stock_symbol_2> ...]")
         sys.exit(1)
     
-    stock_symbol = sys.argv[1]
-    main(stock_symbol)
+    stock_symbols = sys.argv[1:]
+    main(stock_symbols)

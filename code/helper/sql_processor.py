@@ -42,11 +42,11 @@ class CloudSQLDatabase:
 
         inspector = inspect(self.engine)
         existing_columns = inspector.get_columns(table_name)
-        existing_column_names = {col['name'] for col in existing_columns}
+        existing_column_names = {col['name'].lower() for col in existing_columns}
 
         new_columns = []
         for column in df.columns:
-            if column not in existing_column_names:
+            if column.lower() not in existing_column_names:
                 new_columns.append((column, self._get_sqlalchemy_type(df[column].dtype)))
 
         if new_columns:
@@ -54,8 +54,10 @@ class CloudSQLDatabase:
                 for column_name, column_type in new_columns:
                     alter_query = text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {column_type.__visit_name__.upper()}')
                     conn.execute(alter_query)
+                    conn.commit()
             print(f"Table '{table_name}' updated with new columns: {[col[0] for col in new_columns]}")
 
+            
     def _get_sqlalchemy_type(self, dtype):
         if self.big_flag:
             dtype_map = {
@@ -82,6 +84,9 @@ class CloudSQLDatabase:
             print(f"Table '{table_name}' does not exist.")
             return
 
+        # Update the table schema with new columns if necessary
+        self.update_table_schema(table_name, data)
+
         try:
             # Preprocess the DataFrame
             for column in data.columns:
@@ -95,6 +100,9 @@ class CloudSQLDatabase:
             # Convert 'prn_amt' to integer if it's not already
             if 'prn_amt' in data.columns:
                 data['prn_amt'] = pd.to_numeric(data['prn_amt'], errors='coerce').astype('Int64')
+
+            # Map original column names to lowercase with underscores for insertion
+            data.columns = [col.replace(' ', '_').lower() for col in data.columns]
 
             data.to_sql(table_name, self.engine, if_exists='append', index=False)
             print(f"Data inserted successfully into '{table_name}'")
