@@ -1,11 +1,12 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, BigInteger, inspect, text
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, BigInteger, VARCHAR , inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import TypeEngine
 import pandas as pd
 
 class CloudSQLDatabase:
-    def __init__(self, user, password, host, port, database, big_flag=False):
+    def __init__(self, user, password, host, port, database, big_flag=False, logger=None):
+        self.logger = logger
         self.database_uri = f'postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}'
         self.engine = create_engine(self.database_uri)
         self.Base = declarative_base()
@@ -16,8 +17,7 @@ class CloudSQLDatabase:
 
     def create_table(self, table_name, columns):
         if self.table_exists(table_name):
-            print(f"Table '{table_name}' already exists.")
-            return
+            return None
 
         class_attrs = {
             '__tablename__': table_name,
@@ -33,11 +33,11 @@ class CloudSQLDatabase:
         table_class = type(table_name, (self.Base,), class_attrs)
         self.tables[table_name] = table_class
         self.Base.metadata.create_all(self.engine)
-        print(f"Table '{table_name}' created successfully")
+        self.logger.info(f"Table '{table_name}' created successfully")
 
     def update_table_schema(self, table_name, df):
         if not self.table_exists(table_name):
-            print(f"Table '{table_name}' does not exist.")
+            self.logger.info(f"Table '{table_name}' does not exist.")
             return
 
         inspector = inspect(self.engine)
@@ -55,7 +55,7 @@ class CloudSQLDatabase:
                     alter_query = text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {column_type.__visit_name__.upper()}')
                     conn.execute(alter_query)
                     conn.commit()
-            print(f"Table '{table_name}' updated with new columns: {[col[0] for col in new_columns]}")
+            self.logger.info(f"Table '{table_name}' updated with new columns: {[col[0] for col in new_columns]}")
 
             
     def _get_sqlalchemy_type(self, dtype):
@@ -64,7 +64,7 @@ class CloudSQLDatabase:
                 'int64': BigInteger,
                 'Int64': BigInteger,
                 'float64': Float,
-                'object': String,
+                'object': VARCHAR,
                 'bool': Boolean,
                 'datetime64': DateTime
             }
@@ -73,7 +73,7 @@ class CloudSQLDatabase:
                 'int64': Integer,
                 'Int64': Integer,
                 'float64': Float,
-                'object': String,
+                'object': VARCHAR,
                 'bool': Boolean,
                 'datetime64': DateTime
             }
@@ -81,7 +81,7 @@ class CloudSQLDatabase:
 
     def insert_data(self, table_name, data):
         if not self.table_exists(table_name):
-            print(f"Table '{table_name}' does not exist.")
+            self.logger.info(f"Table '{table_name}' does not exist.")
             return
 
         # Update the table schema with new columns if necessary
@@ -105,24 +105,26 @@ class CloudSQLDatabase:
             data.columns = [col.replace(' ', '_').lower() for col in data.columns]
 
             data.to_sql(table_name, self.engine, if_exists='append', index=False)
-            print(f"Data inserted successfully into '{table_name}'")
+            self.logger.info(f"Data inserted successfully into '{table_name}'")
         except Exception as e:
-            print(f"Error while inserting data: {e}")
+            self.logger.info(f"Error while inserting data: {e}")
             self.session.rollback()
 
     def fetch_data(self, query):
         try:
+            if isinstance(query,dict):
+                query = query['query']
             query = text(query)
             df = pd.read_sql(query, self.engine)
 
             return df
         except Exception as e:
-            print(f"Error while fetching data: {e}")
+            self.logger.error(f"Error while fetching data: {e}")
             return None
 
     def close_connection(self):
         self.session.close()
-        print("PostgreSQL connection is closed")
+        self.logger.info("PostgreSQL connection is closed")
 
     def table_exists(self, table_name):
         inspector = inspect(self.engine)

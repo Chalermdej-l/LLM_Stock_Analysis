@@ -21,12 +21,26 @@ class LLMProcessor:
             ],
             model=self.model,
             temperature=0.5,
-            max_tokens=32768,
             top_p=1,
             stop=None,
             stream=False,
         )
         return chat_completion
+
+    def chat_generate_open_ai(self, prompt_object: list):
+        chat_completion = self.client.chat.completions.create(
+            messages=prompt_object,
+            model=self.model,
+            temperature=0.5,
+            top_p=1,
+            stop=None,
+            stream=False,
+        )
+        return chat_completion
+    
+    def process_query(self,system_prompt, prompt):
+        chat_completion = self.chat_generate(system_prompt, prompt)
+        return chat_completion.choices[0].message.content
 
     def process_exctract_list(self, prompt):
         system_prompt = self.get_system_extract_list()
@@ -110,13 +124,13 @@ class LLMProcessor:
         Summarize the stock suggestion list base on the below data.
 
         a) Insider buying activity
-        {insider_buying.to_markdown(index=False)}
+        {insider_buying}
 
         b) Insider buying coinciding with Super Investor ownership
-        {insider_buying_with_superinvestor.to_markdown(index=False)}
+        {insider_buying_with_superinvestor}
 
         c) Custom screener results with insider buying activity
-        {custom_screener.to_markdown(index=False)}
+        {custom_screener}
 
         '''
 
@@ -126,6 +140,7 @@ class LLMProcessor:
 
         Objective:  
         Provide well-informed stock recommendations based on the given data. Your analysis will be used by stock analysts to determine which stocks warrant further research. Offer a comprehensive summary of the data and clear rationale for each suggestion.
+        Use the data provide to you not all the listed data may be provide use whatever data is available to you. 
 
         Instructions:
 
@@ -171,13 +186,13 @@ class LLMProcessor:
         Summarize the stock suggestion list base on the below data.
 
         a) Stocks owned by Super Investors trading near 52-week lows.
-        {df_weeklow.to_markdown(index=False)}
+        {df_weeklow}
 
         b) 13F filings indicating Super Investor positions.
-        {df.to_markdown(index=False)}
+        {df}
 
         c) Fund Mapping information on the fund name to be used with 13F filing.
-        {df_map.to_markdown(index=False)}
+        {df_map}
 
         d) Insider report by another analyst.
         {respond_insider}
@@ -232,13 +247,13 @@ class LLMProcessor:
         Summarize the stock suggestion list base on the below data.
 
         a) Potential stocks based on insider buying activity.
-        {df_insider_buying_with_superinvestor.to_markdown(index=False)}
+        {df_insider_buying_with_superinvestor}
 
         b) Potential stocks based on Super Investor ownership.
-        {df_insider_buying.to_markdown(index=False)}
+        {df_insider_buying}
 
         c) Custom screener results.
-        {df_screen.to_markdown(index=False)}
+        {df_screen}
 
         d) Custom screener results using Magic fomular.
         {df_magic}
@@ -366,6 +381,11 @@ class LLMProcessor:
         Your task is to extract stock ticker from the provided text. 
         Your respond should only be a list of the stocker ticker you found. 
         Do not add any explanation or instructions to your respond.
+
+        ----
+        EXAMPLE
+
+        TICKER, TICKER, TICKER
         '''
     
     def get_promt_extract_list(self, respond):

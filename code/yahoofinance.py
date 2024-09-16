@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Dict
 from dotenv import load_dotenv
@@ -37,18 +36,19 @@ def main(stock_symbol_list: list):
             env_vars['sql_host'],
             env_vars['sql_port'],
             env_vars['sql_database'],
-            big_flag=True
+            big_flag=True,
+            logger=logger
         )
 
         # Set to track created tables
-        created_tables = set()
+        created_tables = set()        
         
         for stock_symbol in stock_symbol_list:
             # Fetch and update stock data
-            stock_data = StockData(stock_symbol)
-            all_data = stock_data.fetch_all_data()
+            stock_data = StockData(stock_symbol, logger)
             logger.info('Process data for {}'.format(stock_symbol))
-
+            all_data = stock_data.fetch_all_data()
+            
             for key, df in all_data.items():
                 if not df.empty:
                     table_name = 'yahoofinance_' + key

@@ -46,7 +46,8 @@ def main():
             env_vars['SQL_PASSWORD'],
             env_vars['SQL_HOST'],
             env_vars['SQL_PORT'],
-            env_vars['SQL_DATABASE']
+            env_vars['SQL_DATABASE'],
+            logger=logger
         )
 
         # Fetch stock screening data using MagicFormulaInvesting

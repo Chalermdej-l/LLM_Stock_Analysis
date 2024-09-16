@@ -40,18 +40,8 @@ def process_sec_data(cik_list: Dict) -> pd.DataFrame:
     processor = SecProcessor(cik_list)
     df = processor.process_all_funds()
     
-    # Clean and convert data types
-    for column in df.columns:
-        if df[column].dtype == 'object':
-            # If the column contains lists, join them into strings
-            df[column] = df[column].apply(lambda x: ''.join(map(str, x)) if isinstance(x, list) else x)
-    
-    # Convert 'prn_amt' to integer
-    if 'prn_amt' in df.columns:
-        df['prn_amt'] = pd.to_numeric(df['prn_amt'], errors='coerce').astype('Int64')
-    
     # Convert other numeric columns as needed
-    numeric_columns = ['value', 'voting_sole', 'voting_shared', 'voting_none']
+    numeric_columns = ['value', 'voting_sole', 'voting_shared', 'voting_none', 'prn_amt']
     for col in numeric_columns:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
@@ -66,7 +56,8 @@ def insert_data_to_sql(df: pd.DataFrame, env_vars: Dict[str, str]) -> None:
         env_vars['sql_host'],
         env_vars['sql_port'],
         env_vars['sql_database'],
-        big_flag=True
+        big_flag=True,
+        logger=logger
     )
     table_name = 'sec_13f'
     try:

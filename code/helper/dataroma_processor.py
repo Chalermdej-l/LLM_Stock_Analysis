@@ -95,7 +95,9 @@ class DataromaScraper:
         df_insider_buy_home['ticker'] = df_insider_buy_home['company'].str.split('-').str[0].str.strip()
         df_insider_buy_home['company'] = df_insider_buy_home['company'].str.split('-').str[1].str.strip()
 
+
         df_insider_buy_home['total_value'] = df_insider_buy_home['total_value'].str.replace(',', '').astype('int')
+        df_insider_buy_home['date_filling'] = df_insider_buy_home['date_filling'].str.replace('Today',datetime.date.today().strftime('%d %b'))
         df_insider_buy_home['date_filling'] = df_insider_buy_home['date_filling'] + ' ' + datetime.date.today().strftime('%Y')
         df_insider_buy_home['date_filling'] = pd.to_datetime(df_insider_buy_home['date_filling'], format='%d %b %Y')
         # Group by all relevant columns
