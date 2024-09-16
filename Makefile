@@ -8,7 +8,8 @@ get_screen_data:
 	python code/finviz.py
 	python code/magic.py	
 	python code/sec_13f.py
-	# python code/yahoofinance.py
+	sleep 1
+	python code/llm.py
 
 llm_process:
 	python code/llm.py

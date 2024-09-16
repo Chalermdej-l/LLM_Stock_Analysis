@@ -6,6 +6,6 @@
     "52week_lows":"SELECT distinct  ticker, percent_owned FROM public.dataroma_low WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
     "13f_filing":"SELECT cm.ticker, initcap(trim(left(fund_name, length(fund_name) - 21))) as fund_name, round(max(prn_amt) * 100.0 / sum(max(prn_amt)) OVER (PARTITION BY initcap(trim(left(fund_name, length(fund_name) - 21)))), 4) FROM  public.sec_13f s INNER JOIN cusip_map cm ON s.cusip = cm.cusip WHERE CAST(trans_date AS DATE) > CURRENT_DATE - 60 and cast(date_insert as date) = CURRENT_DATE GROUP BY cm.ticker, s.fund_name ORDER BY 2, 3 desc",
     "custom_screen":"SELECT distinct ticker, sector, industry, market_cap, pe FROM public.finviz_screen WHERE CAST(date_insert AS DATE) = CURRENT_DATE order by 1;",
-    "screen_magic":"SELECT distinct ticker, market_cap FROM public.magic_screen WHERE CAST(date_insert AS DATE) = CURRENT_DATE  order by 1;"
-   }
+    "screen_magic":"SELECT distinct ticker, market_cap FROM public.magic_screen WHERE CAST(date_insert AS DATE) = CURRENT_DATE  order by 1;"   
+}
 
