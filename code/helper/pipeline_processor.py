@@ -180,7 +180,7 @@ class PipelineProcessor:
             respond_senior = self.llm_helper.process_senior_report(senior_prompt)
 
             extract_prompt = self.llm_helper.get_promt_extract_list(respond_senior)
-            respond_list = self.llm_helper.process_exctract_list(extract_prompt)
+            respond_list = self.llm_helper.process_exctract_list(extract_prompt).split(',')
             
             # Save responses to text files
             # self._save_to_file('respond_insider.txt', respond_insider)
@@ -192,7 +192,8 @@ class PipelineProcessor:
 
             self.logger.info("LLM pipeline completed successfully")
 
-            return respond_senior, respond_combine, respond_screen, respond_low, respond_insider, respond_list
+            # return respond_senior, respond_combine, respond_screen, respond_low, respond_insider, respond_list
+            return respond_senior, respond_list
             # return respond_insider, respond_low, respond_screen
         except Exception as e:
             self.logger.error(f"An error occurred in LLM pipeline: {str(e)}")
@@ -224,6 +225,28 @@ class PipelineProcessor:
 
         except Exception as e:
             self.logger.error(f"An error occurred while running pipelines: {str(e)}")
-        finally:
-            self.sql_helper.close_connection()
 
+    def sql_query_executor(self, sql_query):
+        """Accept PostgreSQL query and execute the query on the database"""
+        try:
+            result = self.sql_helper.fetch_data(sql_query)
+            return json.dumps({"result": result.to_dict(orient='records')})
+        except:
+            return json.dumps({"error": "Invalid expression"})
+
+
+    def route_prompt(self, prompt_object: list):
+
+        last_respond = prompt_object[-1]['content']
+        prompt_object_route=[
+            {"role": "system", "content": self.llm_helper.get_system_route()},
+            {"role": "user", "content": last_respond}
+            ]
+        route_result  = self.llm_helper.chat_generate_open_ai(prompt_object=prompt_object_route, model='llama3-70b-8192')
+
+        if route_result.choices[0].message.content == 'toolbot':
+            print('Calling tool')
+            return self.llm_helper.chat_generate_with_tool(prompt_object=last_respond, tool_function=self.sql_query_executor)
+        else:
+            print('Calling chat')
+            return self.llm_helper.chat_generate_open_ai(prompt_object=prompt_object)
