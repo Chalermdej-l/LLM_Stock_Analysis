@@ -13,3 +13,15 @@ get_screen_data:
 
 llm_process:
 	python code/llm.py
+
+infra_init:
+	terraform -chdir=infra init
+
+infra_plan:
+	terraform -chdir=infra plan
+
+infra_up:
+	terraform -chdir=infra apply
+
+infra_down:
+	terraform -chdir=infra destroy
