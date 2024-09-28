@@ -1,0 +1,6 @@
+project_id      = "your-project-id"
+region          = "us-central1"
+db_instance_name = "my-postgres-instance"
+db_name         = "my_database"
+db_user         = "my_user"
+db_password     = "my_password"  # Consider using a more secure method to set this
