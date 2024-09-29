@@ -182,19 +182,9 @@ class PipelineProcessor:
             extract_prompt = self.llm_helper.get_promt_extract_list(respond_senior)
             respond_list = self.llm_helper.process_exctract_list(extract_prompt).split(',')
             
-            # Save responses to text files
-            # self._save_to_file('respond_insider.txt', respond_insider)
-            # self._save_to_file('respond_low.txt', respond_low)
-            # self._save_to_file('respond_screen.txt', respond_screen)
-            # self._save_to_file('respond_combine.txt', respond_combine)
-            # self._save_to_file('respond_senior.txt', respond_senior)
-            # self._save_to_file('respond_list.txt', respond_list)
-
             self.logger.info("LLM pipeline completed successfully")
 
-            # return respond_senior, respond_combine, respond_screen, respond_low, respond_insider, respond_list
             return respond_senior, respond_list
-            # return respond_insider, respond_low, respond_screen
         except Exception as e:
             self.logger.error(f"An error occurred in LLM pipeline: {str(e)}")
 
@@ -246,7 +236,7 @@ class PipelineProcessor:
 
         if route_result.choices[0].message.content == 'toolbot':
             print('Calling tool')
-            return self.llm_helper.chat_generate_with_tool(prompt_object=last_respond, tool_function=self.sql_query_executor)
+            return self.llm_helper.chat_generate_with_tool(prompt_object=prompt_object, tool_function=self.sql_query_executor)
         else:
             print('Calling chat')
             return self.llm_helper.chat_generate_open_ai(prompt_object=prompt_object)

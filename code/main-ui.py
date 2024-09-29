@@ -19,7 +19,6 @@ required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HO
 env_vars = {var: os.getenv(var) for var in required_vars}
 
 # Initialize processors
-# llm_processor = LLMProcessor(env_vars['API_KEY'], env_vars['MODEL'])
 pipeline_processor = PipelineProcessor(env_vars=env_vars, logger=logger)
 stock_detail_processor = StockDetail(logger=logger, env_vars=env_vars)
 
@@ -33,7 +32,6 @@ async def process_llm_request():
     try:
         content = cl.chat_context.to_openai()
         if content:
-            # respond = llm_processor.chat_generate_open_ai(prompt_object=content)
             respond = await cl.make_async(pipeline_processor.route_prompt)(prompt_object=content)
             return respond
     except Exception as e:
@@ -53,15 +51,6 @@ async def on_action(action: cl.Action):
 @cl.action_callback("Summarize Pipeline")
 async def on_action(action: cl.Action):
     logger.info("The user clicked on the action button!")
-    # respond_senior, respond_combine, respond_screen, respond_low, respond_insider = await cl.make_async(process_llm_pipeline_sync)()
-    # respond_senior, respond_combine, respond_screen, respond_low, respond_insider, _ = await cl.make_async(pipeline_processor.run_llm_pipelines)()
-    # await cl.make_async(pipeline_processor.run_all_pipelines)()
-    # await cl.Message(content=respond_combine).send()
-    # await cl.Message(content=respond_screen).send()
-    # await cl.Message(content=respond_low).send()
-    # await cl.Message(content=respond_insider).send()
-    # await cl.Message(content=respond_senior).send()
-
     respond_senior, _ = await cl.make_async(pipeline_processor.run_llm_pipelines)()
     await cl.Message(content=respond_senior).send()
     return 'Pipeline has run successfully'

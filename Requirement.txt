@@ -1,8 +1,0 @@
-psycopg2
-requests
-bs4
-sqlalchemy
-ratelimit
-chainlit
-asyncpg
-SQLAlchemy

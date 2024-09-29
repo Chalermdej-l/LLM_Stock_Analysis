@@ -1,0 +1,11 @@
+aiohttp==3.9.3
+asyncpg==0.29.0
+bs4==0.0.2
+chainlit==1.1.404
+groq==0.5.0
+pandas==2.1.4
+psycopg2-binary==2.9.9
+ratelimit==2.2.1
+requests==2.31.0
+SQLAlchemy==2.0.29
+yfinance==0.2.41

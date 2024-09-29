@@ -43,16 +43,8 @@ class LLMProcessor:
         return chat_completion
 
     def chat_generate_with_tool(self, prompt_object, tool_function):
-        messages=[
-            {
-                "role": "system",
-                "content": self.get_system_tool()
-            },
-            {
-                "role": "user",
-                "content": prompt_object,
-            }
-        ]
+        prompt_object[0]['content'] = self.get_system_tool()
+        messages= prompt_object.copy()
         tools = [
             {
                 "type": "function",
@@ -79,6 +71,7 @@ class LLMProcessor:
 
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
+        print(f' Query generate : {response_message.function.arguments}')
         if tool_calls:
             available_functions = {
                 "sql_query_executor": tool_function,
@@ -103,7 +96,6 @@ class LLMProcessor:
                         }
                     ]
             second_response = self.chat_generate_open_ai(prompt_object=summerize_meesage, model=self.model)    
-
             return second_response
     
         
@@ -475,9 +467,9 @@ class LLMProcessor:
         You are an SQL analysis assistant. Your task is to analyze data from a PostgreSQL database.
         You will be given a tool to query the database. To use this tool, you need to come up with a valid PostgreSQL query.
 
-        Below are the tables and their schema details in the database:
         DO NOT USE * IN YOUR QUERY
 
+        Below are the tables and their schema details in the database:
         Table Name : public.yahoofinance_balance_sheet
         Table Schema:
         "date": "varchar" NULLABLE | Date of the data in format YYYY-MM-DD example 2024-07-14
@@ -558,6 +550,6 @@ class LLMProcessor:
         - Alway add date_insert = current day in your query
         - Alway limit your respond to 100 row
         - Do not use * in your query always define the column name to query
-        - For any date column use in where clause them to date first example cast(date as date)
+        - For any date column use in where clause cast them to date first example cast(date as date)
         - If there are no data return respond with "No data available for the symbol"
         '''
