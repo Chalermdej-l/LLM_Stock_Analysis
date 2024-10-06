@@ -32,14 +32,15 @@ Then navigate to the project directory:
 cd LLM_Stock_Analysis/
 ```
 
-2. Configure environment variables and update the [.env](.env.example) file Groq API_KEY, Google Project_ID, Magic PW, USER :
+2. Configure environment variables and update the [.env](/.env.example) file Groq API_KEY, Google Project_ID, Magic PW, USER :
    - Rename `.env.example` to `.env`
    - Update the necessary variables in:
      - `.env` file
        
 ![1](/image/chainlit/1.png)
 
-     - Also update the Google Project ID in the Terraform [environment](infra/terraform.tfvars) configuration
+- Also update the Google Project ID in the Terraform [environment](/infra/terraform.tfvars) configuration
+     
 ![2](/image/reproduce/2.png)
 ## Infrastructure Setup
 1. Install required tools:
@@ -137,8 +138,10 @@ Features:
 To stop and clean up:
 1. Stop containers:
 ```bash
-# Use Ctrl + C to stop running containers
+Ctrl + C 
 ```
+To stop running containers
+
 ![9](/image/reproduce/9.png)
 2. Destroy infrastructure:
 ```bash
