@@ -9,11 +9,6 @@ variable "region" {
   default     = "asia-southeast1"
 }
 
-variable "db_instance_name" {
-  description = "The name of the database instance"
-  type        = string
-}
-
 variable "db_name" {
   description = "The name of the database"
   type        = string

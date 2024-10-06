@@ -1,17 +1,17 @@
 version: '3.9'
 services:
-  # app:
-  #   image: llm-chainlit:latest
-  #   ports:
-  #     - "8000:8000"
-  #   command: chainlit run -w /app/code/main-ui.py
-  #   environment:
-  #     - CHAINLIT_PORT=8000
-  #     - CHAINLIT_HOST=0.0.0.0
-  #   depends_on:
-  #     - cloud-sql-proxy
-  #     - init-db
-  #   restart: always
+  app:
+    image: llm-chainlit:latest
+    ports:
+      - "8000:8000"
+    command: chainlit run -w /app/code/main-ui.py
+    environment:
+      - CHAINLIT_PORT=8000
+      - CHAINLIT_HOST=0.0.0.0
+    depends_on:
+      - cloud-sql-proxy
+      - init-db
+    restart: always
 
   init-db:
     image: llm-chainlit:latest
@@ -22,7 +22,7 @@ services:
 
   cloud-sql-proxy:
     image: gcr.io/cloudsql-docker/gce-proxy:latest
-    command: /cloud_sql_proxy -instances=gen-project-427311:asia-southeast1:llm-stock-db=tcp:0.0.0.0:5432 -credential_file=/secrets/cloudsql/service_account.json
+    command: /cloud_sql_proxy -instances=${PROJECT_ID}:${REGION_NAME}:${DATABASE_NAME}=tcp:0.0.0.0:5432 -credential_file=/secrets/cloudsql/service_account.json
     ports:
       - 5432:5432
     volumes:

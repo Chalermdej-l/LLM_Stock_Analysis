@@ -9,6 +9,6 @@ output "database_connection" {
 }
 
 output "service_account_key" {
-  value     = google_service_account_key.db_sa_key.private_key
+  value     = google_service_account_key.service_account_key.private_key
   sensitive = true
 }

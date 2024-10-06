@@ -1,15 +1,26 @@
+module "service_accounts" {
+  source  = "terraform-google-modules/service-accounts/google"
+  version = "4.2.2"
 
-resource "google_service_account" "db_service_account" {
-  account_id   = "db-service-account"
-  display_name = "Database Service Account"
+  project_id   = var.project_id
+  display_name = "Service Account for LLM service"
+
+  names = [
+    "llm-stock-sa"
+  ]
+
+  project_roles = [
+    "${var.project_id}=>roles/cloudsql.client"
+  ]
+
+  providers = {
+    google = google
+  }
 }
 
-resource "google_service_account_key" "db_sa_key" {
-  service_account_id = google_service_account.db_service_account.name
-}
 
-resource "google_project_iam_member" "db_sa_role" {
-  project = var.project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:${google_service_account.db_service_account.email}"
+resource "google_service_account_key" "service_account_key" {
+  service_account_id = "llm-stock-sa"
+
+  depends_on = [module.service_accounts]
 }
