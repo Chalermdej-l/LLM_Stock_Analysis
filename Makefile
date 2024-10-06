@@ -16,14 +16,10 @@ llm-process:
 
 infra-init:
 	terraform -chdir=infra init
-
-infra-plan:
 	terraform -chdir=infra plan
 
 infra-up:
 	terraform -chdir=infra apply
-	sleep 1
-	terraform -chdir=infra output -raw service_account_key | python code/decode_key.py --encode_key="$(cat)"
 
 infra-down:
 	terraform -chdir=infra state rm google_sql_user.users
