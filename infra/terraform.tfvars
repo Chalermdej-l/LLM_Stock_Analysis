@@ -1,4 +1,4 @@
-project_id       = "your-project-id"
+project_id       = "gen-project-427311"
 region           = "asia-southeast1"
 db_name          = "llm-stock-db"
 db_user          = "admin"

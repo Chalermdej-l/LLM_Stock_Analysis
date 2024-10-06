@@ -1,8 +1,3 @@
-
-start:
-	clear
-	python main.py --message "Hi this is a test"
-
 get-screen-data:
 	python code/dataroma.py	
 	python code/finviz.py
