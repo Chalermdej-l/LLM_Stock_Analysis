@@ -12,8 +12,9 @@ logger = logging.getLogger(__name__)
 def load_environment_variables() -> Dict[str, str]:
     """Load and validate required environment variables."""
     load_dotenv('./.env')
-    required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST', 'MODEL', 'API_KEY']
+    required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST', 'MODEL', 'API_KEY', 'PROJECT_ID', 'REGION_NAME', 'DATABASE_NAME']
     env_vars = {var: os.getenv(var) for var in required_vars}
+    env_vars['DB_URL'] = ':'.join([env_vars['PROJECT_ID'],env_vars['REGION_NAME'],env_vars['DATABASE_NAME']])
     
     missing_vars = [var for var, value in env_vars.items() if value is None]
     if missing_vars:
@@ -45,7 +46,7 @@ def create_tables(engine, table_queries: Dict[str, str]):
 
                 logger.info(f"Creating table: {table_name}")
                 try:
-                    conn.execute(text(query))
+                    conn.execute(text(query.replace("'",'"')))
                     conn.commit()
                 except Exception as e:
                     logger.error(f"Error creating table '{table_name}': {e}", exc_info=True)

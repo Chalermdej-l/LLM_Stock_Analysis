@@ -8,11 +8,10 @@
 */**/__pycache__
 *.jpg
 */**/*.txt
-
+key
 */**/*.tfstate
 infra/.terraform
 */**/*.hcl
 */**/*.lock.info
-infra/terraform.tfvars
 */**/*.backup
 /key/service_account.json
