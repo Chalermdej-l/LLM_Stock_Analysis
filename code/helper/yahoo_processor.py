@@ -30,7 +30,7 @@ class StockData:
             self.logger.error(f"Unexpected result type: {type(result)}")
             return True
         
-    def _retry_operation(self, operation, max_retries=2, delay=3):
+    def _retry_operation(self, operation, max_retries=0, delay=1):
         for attempt in range(max_retries + 1):
             try:
                 result = operation()

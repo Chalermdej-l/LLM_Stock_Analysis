@@ -68,10 +68,9 @@ class LLMProcessor:
                                                tools=tools, 
                                                model='llama3-groq-70b-8192-tool-use-preview'
                                                )
-
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
-        print(f' Query generate : {response_message.function.arguments}')
+        print(f' Query generate : {tool_calls[0].function.arguments}')
         if tool_calls:
             available_functions = {
                 "sql_query_executor": tool_function,
@@ -551,5 +550,6 @@ class LLMProcessor:
         - Alway limit your respond to 100 row
         - Do not use * in your query always define the column name to query
         - For any date column use in where clause cast them to date first example cast(date as date)
+        - If ask to find data relate to date alway use BETWEEN to query the date example WHERE date between '2023-01-01' to '2023-12-31
         - If there are no data return respond with "No data available for the symbol"
         '''

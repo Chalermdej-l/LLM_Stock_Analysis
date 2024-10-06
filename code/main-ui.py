@@ -5,7 +5,6 @@ import logging
 import os
 from dotenv import load_dotenv
 from helper.pipeline_processor import PipelineProcessor
-# from helper.llm_processor import LLMProcessor
 from helper.stock_detail import StockDetail
 from chainlit.types import ThreadDict
 
@@ -33,10 +32,10 @@ async def process_llm_request():
         content = cl.chat_context.to_openai()
         if content:
             respond = await cl.make_async(pipeline_processor.route_prompt)(prompt_object=content)
-            return respond
+            return respond.choices[0].message.content
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}", exc_info=True)
-        return f"An error occurred: {str(e)}"
+        return f"Apologize , We can't process your requests. {str(e)} . Please try again."
 
 # Action callback to run the pipeline
 @cl.action_callback("Run Pipeline")
@@ -52,6 +51,7 @@ async def on_action(action: cl.Action):
 async def on_action(action: cl.Action):
     logger.info("The user clicked on the action button!")
     respond_senior, _ = await cl.make_async(pipeline_processor.run_llm_pipelines)()
+    stock_detail_processor.process_yahoo_finance_pipeline(_)
     await cl.Message(content=respond_senior).send()
     return 'Pipeline has run successfully'
 
@@ -86,7 +86,10 @@ async def on_chat_start():
 async def main(message: cl.Message):
     result = await process_llm_request()
     if result:
-        response = await cl.Message(content=result.choices[0].message.content).send()
+        response = await cl.Message(content=result).send()
+        await response.update()
+    else:
+        response = await cl.Message(content='Aplogieze ').send()
         await response.update()
 
 # Run the application

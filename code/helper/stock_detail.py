@@ -3,13 +3,13 @@ import pandas as pd
 from helper.yahoo_processor import StockData
 from helper.sql_processor import CloudSQLDatabase
 class StockDetail:
-    def __init__(self, logger, env_vars, max_workers=5):
+    def __init__(self, logger, env_vars, max_workers=8):
         """
         Initialize StockDetail class with a list of stock symbols, logger, and SQL helper.
         :param stock_symbol_list: List of stock symbols to fetch data for.
         :param logger: Logger for logging information and errors.
         :param sql_helper: SQL helper object for database operations.
-        :param max_workers: Maximum number of threads to run in parallel (default is 5).
+        :param max_workers: Maximum number of threads to run in parallel (default is 8).
         """
         self.logger = logger
         self.sql_helper = CloudSQLDatabase(
