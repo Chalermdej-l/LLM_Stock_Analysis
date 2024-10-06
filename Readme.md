@@ -12,8 +12,8 @@ This project is the project for LLM Zoomcamp[https://github.com/DataTalksClub/ll
   - [3. Data Sources (SEC 13f, Yahoo Finance, Data Roma)](#3-data-sources-sec-13f-yahoo-finance-data-roma)
   - [4. GROQ/LLama 3.1](#4-groqllama-31)
   - [5. PostgreSQL Database](#5-postgresql-database)
+- [Remider](#remider)
 - [Reproducibility](#reproducibility)
-
 ## Problem Statement
 Traditional financial data analysis can be a time-consuming and labor-intensive process, requiring investors to sift through vast amounts of information to gain valuable insights. This project aims to revolutionize the way investors interact with financial data by developing a conversational AI-powered tool that leverages Large Language Models (LLMs) to summarize and analyze vast amounts of financial information.
 
@@ -74,6 +74,15 @@ You also need the package below
 Once all prerequisite is created you will need to update the [.env](.env.example) file. and [terraform var](infra/terraform.tfvars)
 
 Then follow the step describe in [Reproduce Step](other/readme.md)
+
+## Remider
+This project is designed as a personal experiment to explore the capabilities of Large Language Models (LLMs) in summarizing financial data. While it demonstrates interesting potential, please keep the following in mind:
+
+- For personal use only: This project is intended solely for educational and exploratory purposes. It is not designed to provide financial advice or guide investment decisions.
+- Not financial advice: The outputs of this project should not be interpreted as professional financial recommendations. You should always conduct your own research and consult a certified financial advisor before making any investment decisions.
+- No guarantees on accuracy: While the AI may offer insights, it is not a substitute for professional financial expertise and should not be relied upon for making financial choices.
+
+This project is a demonstration of what LLMs can achieve in data analysis and summarization, but it is not intended for use in actual financial decision-making.
 
 ## Further Improvements
 Deploy the Docker Image to Cloud service 
