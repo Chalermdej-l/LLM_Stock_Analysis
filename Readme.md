@@ -73,6 +73,9 @@ You also need the package below
 
 Once all prerequisite is created you will need to update the [.env](.env.example) file. and [terraform var](infra/terraform.tfvars)
 
+Then follow the step describe in [Reproduce Step](other/readme.md)
+
 ## Further Improvements
 Deploy the Docker Image to Cloud service 
+
 Add more scaping options like recent news or Financial report
