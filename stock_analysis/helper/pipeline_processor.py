@@ -1,6 +1,7 @@
 import json
 import re
-from typing import Dict
+from typing import Dict, Tuple
+
 import pandas as pd
 from stock_analysis.constants import (
     SEC_13F_TABLE,
@@ -137,32 +138,39 @@ class PipelineProcessor:
         except Exception as e:
             self.logger.error(f"An error occurred in Magic Formula pipeline: {str(e)}")
 
+    def _load_queries(self) -> Dict[str, str]:
+        """Load the report query configurations from ./data/QUERY.json."""
+        with open("./data/QUERY.json", "r") as f:
+            return json.load(f)
+
+    def _fetch_frames(self, query: Dict[str, str]) -> Dict[str, pd.DataFrame]:
+        """Fetch every report source table configured in QUERY.json."""
+        return {
+            "insider_buying_activity": self.sql_helper.fetch_data(query["insider_buying_activity"]),
+            "insider_buying_activity_with_superinvestor": self.sql_helper.fetch_data(
+                query["insider_buying_activity_with_superinvestor"]
+            ),
+            "custom_insider": self.sql_helper.fetch_data(query["custom_insider"]),
+            "52week_lows": self.sql_helper.fetch_data(query["52week_lows"]),
+            "13f_filing": self.sql_helper.fetch_data(query["13f_filing"]),
+            "custom_screen": self.sql_helper.fetch_data(query["custom_screen"]),
+            "screen_magic": self.sql_helper.fetch_data(query["screen_magic"]),
+        }
+
+    def _map_funds(self, filing_13f: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Replace fund names with integer ids and return the mapping table."""
+        unique_funds = filing_13f["fund_name"].unique()
+        fund_mapping = {fund: i for i, fund in enumerate(unique_funds, start=1)}
+        filing_13f["fund_name"] = filing_13f["fund_name"].map(fund_mapping)
+        mapping_fund = pd.json_normalize(fund_mapping).T.reset_index()
+        mapping_fund.columns = ["fund_name", "index"]
+        return filing_13f, mapping_fund
+
     def process_llm_pipeline(self):
         try:
-            # Load query configurations
-            with open("./data/QUERY.json", "r") as f:
-                QUERY = json.load(f)
-
-            # Fetch data using SQL helper
-            data_frames = {
-                "insider_buying_activity": self.sql_helper.fetch_data(QUERY["insider_buying_activity"]),
-                "insider_buying_activity_with_superinvestor": self.sql_helper.fetch_data(
-                    QUERY["insider_buying_activity_with_superinvestor"]
-                ),
-                "custom_insider": self.sql_helper.fetch_data(QUERY["custom_insider"]),
-                "52week_lows": self.sql_helper.fetch_data(QUERY["52week_lows"]),
-                "13f_filing": self.sql_helper.fetch_data(QUERY["13f_filing"]),
-                "custom_screen": self.sql_helper.fetch_data(QUERY["custom_screen"]),
-                "screen_magic": self.sql_helper.fetch_data(QUERY["screen_magic"]),
-            }
-
-            # Process unique funds
-            filing_13f = data_frames["13f_filing"]
-            unique_funds = filing_13f["fund_name"].unique()
-            fund_mapping = {fund: i for i, fund in enumerate(unique_funds, start=1)}
-            filing_13f["fund_name"] = filing_13f["fund_name"].map(fund_mapping)
-            mapping_fund = pd.json_normalize(fund_mapping).T.reset_index()
-            mapping_fund.columns = ["fund_name", "index"]
+            query = self._load_queries()
+            data_frames = self._fetch_frames(query)
+            filing_13f, mapping_fund = self._map_funds(data_frames["13f_filing"])
 
             # Generate prompts and process reports using LLM helper
             insider_prompt = self.llm_helper.get_prompt_insider(

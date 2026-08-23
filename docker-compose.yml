@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   app:
     image: llm-chainlit:latest
@@ -23,10 +22,8 @@ services:
     restart: on-failure
 
   cloud-sql-proxy:
-    image: gcr.io/cloudsql-docker/gce-proxy:latest
+    image: gcr.io/cloudsql-docker/gce-proxy:1.33.0
     command: /cloud_sql_proxy -instances=${PROJECT_ID}:${REGION_NAME}:${DATABASE_NAME}=tcp:0.0.0.0:5432 -credential_file=/secrets/cloudsql/service_account.json
-    ports:
-      - 5432:5432
     volumes:
       - ./key:/secrets/cloudsql
     restart: always

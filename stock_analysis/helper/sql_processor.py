@@ -1,3 +1,7 @@
+import logging
+from typing import Any, Dict
+
+import pandas as pd
 from sqlalchemy import (
     create_engine,
     Column,
@@ -14,21 +18,36 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import TypeEngine
-import pandas as pd
 
 
 class CloudSQLDatabase:
-    def __init__(self, user, password, host, port, database, big_flag=False, logger=None):
+    def __init__(
+        self,
+        user: str,
+        password: str,
+        host: str,
+        port: str,
+        database: str,
+        logger: logging.Logger,
+        big_flag: bool = False,
+    ) -> None:
+        """Create a SQLAlchemy engine and session bound to the Cloud SQL PostgreSQL instance."""
         self.logger = logger
         self.database_uri = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
         self.engine = create_engine(self.database_uri)
         self.Base = declarative_base()
         self.Session = sessionmaker(bind=self.engine)
         self.session = self.Session()
-        self.tables = {}
+        self.tables: Dict[str, Any] = {}
         self.big_flag = big_flag
 
-    def create_table(self, table_name, columns):
+    def create_table(self, table_name: str, columns: Dict[str, Any]) -> None:
+        """Create the table if it does not exist yet.
+
+        Args:
+            table_name: Name of the table to create.
+            columns: Mapping of column name to a SQLAlchemy type or a pandas dtype.
+        """
         if self.table_exists(table_name):
             return None
 
@@ -48,7 +67,8 @@ class CloudSQLDatabase:
         self.Base.metadata.create_all(self.engine)
         self.logger.info(f"Table '{table_name}' created successfully")
 
-    def update_table_schema(self, table_name, df):
+    def update_table_schema(self, table_name: str, df: pd.DataFrame) -> None:
+        """Add any DataFrame columns that are missing from the existing table."""
         if not self.table_exists(table_name):
             self.logger.info(f"Table '{table_name}' does not exist.")
             return
@@ -72,7 +92,8 @@ class CloudSQLDatabase:
                     conn.commit()
             self.logger.info(f"Table '{table_name}' updated with new columns: {[col[0] for col in new_columns]}")
 
-    def _get_sqlalchemy_type(self, dtype):
+    def _get_sqlalchemy_type(self, dtype: Any) -> Any:
+        """Map a pandas dtype to a SQLAlchemy column type, honoring big_flag for integer widths."""
         if self.big_flag:
             dtype_map = {
                 "int64": BigInteger,
@@ -93,7 +114,8 @@ class CloudSQLDatabase:
             }
         return dtype_map.get(str(dtype), String)
 
-    def insert_data(self, table_name, data):
+    def insert_data(self, table_name: str, data: pd.DataFrame) -> None:
+        """Insert a DataFrame into the table, expanding the schema for new columns."""
         if not self.table_exists(table_name):
             self.logger.info(f"Table '{table_name}' does not exist.")
             return
@@ -126,7 +148,8 @@ class CloudSQLDatabase:
             self.logger.error(f"Error while inserting data: {e}")
             self.session.rollback()
 
-    def fetch_data(self, query):
+    def fetch_data(self, query: "str | Dict[str, str]") -> pd.DataFrame:
+        """Run a SELECT query (plain string or {'query': ...} dict) and return it as a DataFrame."""
         if isinstance(query, dict):
             query = query["query"]
         try:
@@ -136,10 +159,12 @@ class CloudSQLDatabase:
             self.logger.error(f"Error while fetching data: {e}")
             raise
 
-    def close_connection(self):
+    def close_connection(self) -> None:
+        """Close the active database session."""
         self.session.close()
         self.logger.info("PostgreSQL connection is closed")
 
-    def table_exists(self, table_name):
+    def table_exists(self, table_name: str) -> bool:
+        """Return True when the table is present in the database."""
         inspector = inspect(self.engine)
         return table_name in inspector.get_table_names()

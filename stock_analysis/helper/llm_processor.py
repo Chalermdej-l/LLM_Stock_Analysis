@@ -1,11 +1,15 @@
-import logging
 import datetime
 import json
+import logging
+from typing import Callable, Optional
+
+import pandas as pd
 from groq import Groq
 
 
 class LLMProcessor:
-    def __init__(self, api_key, model, model_tool=None):
+    def __init__(self, api_key: str, model: str, model_tool: Optional[str] = None) -> None:
+        """Initialize a Groq client and the default / tool-calling model ids."""
         self.client = Groq(api_key=api_key, timeout=120, max_retries=2)
         self.today = datetime.datetime.today().strftime("%Y-%m-%d")
         self.model = model
@@ -13,6 +17,7 @@ class LLMProcessor:
         self.logger = logging.getLogger(__name__)
 
     def chat_generate(self, system_prompt: str, prompt: str):
+        """Request a chat completion for a system/user prompt pair with the default model."""
         chat_completion = self.client.chat.completions.create(
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -27,7 +32,8 @@ class LLMProcessor:
         self.logger.info(f"Groq completion usage: {chat_completion.usage}")
         return chat_completion
 
-    def chat_generate_open_ai(self, prompt_object: list, model: str = None, tools: list = None):
+    def chat_generate_open_ai(self, prompt_object: list, model: Optional[str] = None, tools: Optional[list] = None):
+        """Request a chat completion for a raw message list, with optional model override and tools."""
         model = model or self.model
         chat_completion = self.client.chat.completions.create(
             messages=prompt_object,
@@ -42,7 +48,8 @@ class LLMProcessor:
         self.logger.info(f"Groq completion usage: {chat_completion.usage}")
         return chat_completion
 
-    def chat_generate_with_tool(self, prompt_object, tool_function):
+    def chat_generate_with_tool(self, prompt_object: list, tool_function: Callable[..., str]):
+        """Run the SQL tool-calling loop: generate a query, execute it, summarize the result."""
         prompt_object[0]["content"] = self.get_system_tool()
         messages = prompt_object.copy()
         tools = [
@@ -92,41 +99,49 @@ class LLMProcessor:
             second_response = self.chat_generate_open_ai(prompt_object=summerize_meesage, model=self.model)
             return second_response
 
-    def process_query(self, system_prompt, prompt):
+    def process_query(self, system_prompt: str, prompt: str) -> str:
+        """Return the assistant text for a system/user prompt pair."""
         chat_completion = self.chat_generate(system_prompt, prompt)
         return chat_completion.choices[0].message.content
 
-    def process_exctract_list(self, prompt):
+    def process_exctract_list(self, prompt: str) -> str:
+        """Return the raw ticker list extracted from a report by the LLM."""
         system_prompt = self.get_system_extract_list()
         insider_llm = self.chat_generate(system_prompt, prompt)
         return insider_llm.choices[0].message.content
 
-    def process_insider_report(self, prompt):
+    def process_insider_report(self, prompt: str) -> str:
+        """Return the insider buying activity report."""
         system_prompt = self.get_system_prompt_insider()
         insider_llm = self.chat_generate(system_prompt, prompt)
         return insider_llm.choices[0].message.content
 
-    def process_52week_low_report(self, prompt):
+    def process_52week_low_report(self, prompt: str) -> str:
+        """Return the 52-week low / 13F filing report."""
         system_prompt = self.get_system_prompt_52week_low()
         invester_llm = self.chat_generate(system_prompt, prompt)
         return invester_llm.choices[0].message.content
 
-    def process_custom_screener(self, prompt):
+    def process_custom_screener(self, prompt: str) -> str:
+        """Return the custom screener report."""
         system_prompt = self.get_system_prompt_custom_screener()
         invester_llm = self.chat_generate(system_prompt, prompt)
         return invester_llm.choices[0].message.content
 
-    def process_combined_screener(self, prompt):
+    def process_combined_screener(self, prompt: str) -> str:
+        """Return the combined screener report."""
         system_prompt = self.get_system_prompt_combined_screener()
         invester_llm = self.chat_generate(system_prompt, prompt)
         return invester_llm.choices[0].message.content
 
-    def process_senior_report(self, prompt):
+    def process_senior_report(self, prompt: str) -> str:
+        """Return the senior analyst report that aggregates all previous reports."""
         system_prompt = self.get_system_prompt_senior_report()
         invester_llm = self.chat_generate(system_prompt, prompt)
         return invester_llm.choices[0].message.content
 
-    def get_system_prompt_insider(self):
+    def get_system_prompt_insider(self) -> str:
+        """System prompt for the insider buying activity report."""
         return """
         You are an assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for further review by a stock analyst.
         
@@ -167,7 +182,13 @@ class LLMProcessor:
         Your role is to provide an initial analysis to guide further research. Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
         """
 
-    def get_prompt_insider(self, insider_buying, insider_buying_with_superinvestor, custom_screener):
+    def get_prompt_insider(
+        self,
+        insider_buying: pd.DataFrame,
+        insider_buying_with_superinvestor: pd.DataFrame,
+        custom_screener: pd.DataFrame,
+    ) -> str:
+        """User prompt for the insider buying activity report."""
         return f"""
         Today is {self.today}
 
@@ -184,7 +205,8 @@ class LLMProcessor:
 
         """
 
-    def get_system_prompt_52week_low(self):
+    def get_system_prompt_52week_low(self) -> str:
+        """System prompt for the 52-week low / 13F filing report."""
         return """
         You are an assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for review by a senior stock analyst.
 
@@ -228,7 +250,10 @@ class LLMProcessor:
         Provide an initial analysis to guide further research. Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
         """
 
-    def get_prompt_52week_low(self, df_weeklow, df, df_map, respond_insider):
+    def get_prompt_52week_low(
+        self, df_weeklow: pd.DataFrame, df: pd.DataFrame, df_map: pd.DataFrame, respond_insider: str
+    ) -> str:
+        """User prompt for the 52-week low / 13F filing report."""
         return f"""
         Summarize the stock suggestion list base on the below data.
 
@@ -245,7 +270,8 @@ class LLMProcessor:
         {respond_insider}
         """
 
-    def get_system_prompt_custom_screener(self):
+    def get_system_prompt_custom_screener(self) -> str:
+        """System prompt for the custom screener report."""
         return """
         You are an assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for review by a senior stock analyst.
 
@@ -284,7 +310,14 @@ class LLMProcessor:
         Provide an initial analysis to guide further research. Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
         """
 
-    def get_prompt_custom_screener(self, df_screen, df_insider_buying, df_insider_buying_with_superinvestor, df_magic):
+    def get_prompt_custom_screener(
+        self,
+        df_screen: pd.DataFrame,
+        df_insider_buying: pd.DataFrame,
+        df_insider_buying_with_superinvestor: pd.DataFrame,
+        df_magic: pd.DataFrame,
+    ) -> str:
+        """User prompt for the custom screener report."""
         return f"""
         Summarize the stock suggestion list base on the below data.
 
@@ -301,7 +334,8 @@ class LLMProcessor:
         {df_magic}
         """
 
-    def get_system_prompt_combined_screener(self):
+    def get_system_prompt_combined_screener(self) -> str:
+        """System prompt for the combined screener report."""
         return """
         You are an assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for review by a senior stock analyst.
 
@@ -339,7 +373,10 @@ class LLMProcessor:
         Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
         """
 
-    def get_prompt_combined_screener(self, respond_screen, df_custom, filing_13f):
+    def get_prompt_combined_screener(
+        self, respond_screen: str, df_custom: pd.DataFrame, filing_13f: pd.DataFrame
+    ) -> str:
+        """User prompt for the combined screener report."""
         return f"""
         Summarize the stock suggestion list base on the below data.
 
@@ -353,7 +390,8 @@ class LLMProcessor:
         {respond_screen}
         """
 
-    def get_system_prompt_senior_report(self):
+    def get_system_prompt_senior_report(self) -> str:
+        """System prompt for the senior analyst report."""
         return """
         You are an AI assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for review by a senior stock analyst.
 
@@ -397,7 +435,10 @@ class LLMProcessor:
         Provide an initial analysis to guide further research. Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
         """
 
-    def get_prompt_senior_report(self, respond_insider, respond_low, respond_screen, respond_screen_combine):
+    def get_prompt_senior_report(
+        self, respond_insider: str, respond_low: str, respond_screen: str, respond_screen_combine: str
+    ) -> str:
+        """User prompt for the senior analyst report."""
         return f"""
         Summarize the stock suggestion list base on the below data.
 
@@ -414,7 +455,8 @@ class LLMProcessor:
         {respond_screen_combine}
         """
 
-    def get_system_extract_list(self):
+    def get_system_extract_list(self) -> str:
+        """System prompt for extracting a raw ticker list from a report."""
         return """You are a helpful assistance. 
         Your task is to extract stock ticker from the provided text. 
         Your respond should only be a list of the stocker ticker you found. 
@@ -426,7 +468,8 @@ class LLMProcessor:
         TICKER, TICKER, TICKER
         """
 
-    def get_promt_extract_list(self, respond):
+    def get_promt_extract_list(self, respond: str) -> str:
+        """User prompt for extracting a raw ticker list from a report."""
         return f"""
         Extract the stock ticker from the below data.
         DATA
@@ -434,7 +477,8 @@ class LLMProcessor:
         {respond}
         """
 
-    def get_system_route(self):
+    def get_system_route(self) -> str:
+        """System prompt for routing a chat message to the chat or tool agent."""
         return """
         # Router Assistant Prompt
 
@@ -454,7 +498,8 @@ class LLMProcessor:
         - Respond solely with the chosen LLM option
         """
 
-    def get_system_tool(self):
+    def get_system_tool(self) -> str:
+        """System prompt with the full PostgreSQL schema for the SQL tool-calling agent."""
         current_date = datetime.datetime.today().strftime("%Y-%m-%d")
         return f"""
         You are an SQL analysis assistant. Your task is to analyze data from a PostgreSQL database.

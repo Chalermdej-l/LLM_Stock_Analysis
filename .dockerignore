@@ -1,0 +1,16 @@
+.git
+.github
+.gitignore
+.chainlit
+.ruff_cache
+.env
+.env.example
+docker
+infra
+image
+other
+key
+tests
+Makefile
+README.md
+*.md
