@@ -1,14 +1,18 @@
-# LLM_Stock_Analysis
+# LLM Stock Analysis Chatbot
 
-This project is the project for the [LLM Zoomcamp](https://github.com/DataTalksClub/llm-zoomcamp) course. This project aims to harness the power of Large Language Models (LLMs) to provide investors with a novel approach to analyzing financial data. By integrating Groq-hosted LLMs with a PostgreSQL database of scraped financial data, this project enables users to interact with financial data in a conversational and intuitive way, using a user-friendly chatbox interface built with Chainlit.
+A conversational stock-research tool built for the [LLM Zoomcamp](https://github.com/DataTalksClub/llm-zoomcamp) course. It scrapes financial data from several public sources into PostgreSQL, then lets a Groq-hosted LLM answer natural-language questions over that data through an SQL tool-calling loop, served in a [Chainlit](https://chainlit.io/) chat UI.
+
+Data sources: SEC 13F filings, [Dataroma](https://www.dataroma.com/) superinvestor holdings, [Finviz](https://finviz.com/) screener data, and Yahoo Finance fundamentals.
 
 ## Table of Contents
 
 - [Problem Statement](#problem-statement)
 - [Tools Used](#tools-used)
+- [Repository Layout](#repository-layout)
 - [Project Overview](#project-overview)
 - [Architecture](#architecture)
 - [Reproducibility](#reproducibility)
+- [Development](#development)
 - [Disclaimer](#disclaimer)
 - [Further Improvements](#further-improvements)
 
@@ -27,6 +31,34 @@ This project used the tools below.
 - LLM: Groq API for fast inference (model ids are configured via the `MODEL` / `MODEL_TOOL` environment variables)
 - Reproducibility: Makefile (for ease of project reproducibility)
 - Chatbot UI: Chainlit (for the chatbot UI)
+- Database: PostgreSQL on Cloud SQL (GCP)
+- Testing & Quality: pytest, ruff, mypy, pre-commit, GitHub Actions
+
+
+## Repository Layout
+
+```
+├── .chainlit/                    # Chainlit UI config and chat starters
+├── data/                         # static reference data
+│   ├── CIK_LIST.json               # ticker -> SEC CIK mapping
+│   ├── DB_INIT.json                # table DDL used to bootstrap Postgres
+│   └── QUERY.json                  # named SQL snippets exposed to the LLM
+├── docker/                       # Chainlit app image
+├── infra/                        # Terraform: Cloud SQL instance, service account
+├── stock_analysis/               # application package
+│   ├── main_ui.py                  # Chainlit entrypoint (chat loop)
+│   ├── llm.py                      # LLM chat orchestration
+│   ├── init_db.py                  # create tables from DB_INIT.json
+│   ├── sec_13f.py                  # SEC 13F scrape -> Postgres
+│   ├── dataroma.py                 # Dataroma holdings scrape -> Postgres
+│   ├── finviz.py                   # Finviz screener scrape -> Postgres
+│   ├── yahoofinance.py             # Yahoo Finance fundamentals -> Postgres
+│   ├── settings.py                 # env-driven config
+│   └── helper/                     # processors: sql, llm, and one per source
+├── tests/                        # pytest suite (no network or DB required)
+├── Makefile                      # scrape, infra, and docker targets
+└── docker-compose.yml            # local Chainlit + app stack
+```
 
 ## Project Overview
 
@@ -42,10 +74,10 @@ The frontend interface built using Chainlit provides a user-friendly chatbot exp
 
 The core system is implemented in Python and hosted using a Docker image and Docker Compose. It manages the orchestration of data scraping from multiple sources, handles data processing, and coordinates communication between the different components. This backend code is responsible for executing the business logic and maintaining the flow of data throughout the system.
 
-### 3. Data Sources (SEC 13F, Yahoo Finance, Data Roma)
+### 3. Data Sources (SEC 13F, Dataroma, Finviz, Yahoo Finance)
 ![Scrape](image/resource/sql.png)
 
-Multiple data sources are integrated into the system to provide comprehensive financial information. SEC 13F provides institutional filing data, Yahoo Finance offers financial statement data, and Data Roma contributes insider-activity data.
+Multiple data sources are integrated into the system to provide comprehensive financial information. SEC 13F provides institutional filing data, Dataroma contributes superinvestor holdings, Finviz supplies screener metrics, and Yahoo Finance offers financial statement data.
 
 ### 4. Groq LLM
 ![LLM](image/resource/conversation-log.png)
@@ -99,6 +131,23 @@ Once all prerequisites are created you will need to update the [.env](.env.examp
 > Note on the Cloud SQL credential: `infra/_sa.tf` mints a long-lived, downloadable service-account key, which is written to `key/service_account.json` and mounted into the Cloud SQL proxy container. This is a tradeoff for local development; for a production deployment, prefer Workload Identity Federation over a downloadable service-account key.
 
 Then follow the steps described in the [Reproduce Guide](other/README.md).
+
+## Development
+
+Install the dev tooling and run the checks locally:
+
+```bash
+pip install -r requirements.txt
+pip install pytest ruff==0.15.9 mypy==1.15.0
+pre-commit install
+
+ruff format --check .
+ruff check .
+mypy --ignore-missing-imports stock_analysis/helper/sql_processor.py stock_analysis/helper/llm_processor.py
+pytest
+```
+
+The tests run without network access, a Groq API key, or a live database — scraping and SQL layers are exercised against fixtures. CI ([.github/workflows/ci.yml](/.github/workflows/ci.yml)) runs ruff, mypy, pytest, and `terraform fmt` on every push and pull request.
 
 ## Disclaimer
 
