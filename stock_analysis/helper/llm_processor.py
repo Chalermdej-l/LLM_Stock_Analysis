@@ -35,6 +35,10 @@ class LLMProcessor:
     def chat_generate_open_ai(self, prompt_object: list, model: Optional[str] = None, tools: Optional[list] = None):
         """Request a chat completion for a raw message list, with optional model override and tools."""
         model = model or self.model
+        extra_kwargs: dict = {}
+        if tools is not None:
+            extra_kwargs["tools"] = tools
+            extra_kwargs["tool_choice"] = "auto"
         chat_completion = self.client.chat.completions.create(
             messages=prompt_object,
             model=model,
@@ -42,8 +46,7 @@ class LLMProcessor:
             top_p=1,
             stop=None,
             stream=False,
-            tool_choice="auto",
-            tools=tools,
+            **extra_kwargs,
         )
         self.logger.info(f"Groq completion usage: {chat_completion.usage}")
         return chat_completion
