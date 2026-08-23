@@ -1,17 +1,33 @@
+# Environment & secrets
 .env
-*/**/*.ipynb
-*/**/*.jpg
-*.ipynb
-.chainlit
-.files
-.cache
-*/**/__pycache__
+.env.*
+!.env.example
+key/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv
+.pytest_cache/
+.ruff_cache/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.lock.hcl
+
+# Chainlit
+.chainlit/
+
+# Generated reports
+data/respond_*.txt
+
+# Binaries
+*.exe
+
+# Misc
 *.jpg
-*/**/*.txt
-key
-*/**/*.tfstate
-infra/.terraform
-*/**/*.hcl
-*/**/*.lock.info
-*/**/*.backup
-/key/service_account.json
+*.ipynb
