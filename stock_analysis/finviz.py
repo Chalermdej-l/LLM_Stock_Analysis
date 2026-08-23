@@ -1,9 +1,6 @@
 import logging
-import os
-from typing import Dict
 
-from dotenv import load_dotenv
-
+from stock_analysis.settings import SQL_VARS, load_env
 from stock_analysis.helper.sql_processor import CloudSQLDatabase
 from stock_analysis.helper.finviz_processor import FinvizScraper
 
@@ -11,33 +8,13 @@ from stock_analysis.helper.finviz_processor import FinvizScraper
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def load_environment_variables() -> Dict[str, str]:
-    """
-    Load and return required environment variables.
-    
-    Returns:
-        env_vars (Dict[str, str]): A dictionary containing the required environment variables.
-    
-    Raises:
-        ValueError: If any required environment variables are missing.
-    """
-    load_dotenv('./.env')
-    required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST']
-    env_vars = {var: os.getenv(var) for var in required_vars}
-    
-    missing_vars = [var for var, value in env_vars.items() if value is None]
-    if missing_vars:
-        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-    
-    return env_vars
-
 def main():
     """
     Main function to load environment variables, initialize SQL helper and Finviz scraper, and update the database.
     """
     try:
         # Load environment variables
-        env_vars = load_environment_variables()
+        env_vars = load_env(SQL_VARS)
         
         # Initialize CloudSQLDatabase
         sql_helper = CloudSQLDatabase(

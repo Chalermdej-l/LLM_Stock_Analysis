@@ -1,9 +1,7 @@
 import json
-import logging
 import re
 from typing import Dict
 import pandas as pd
-import os
 from stock_analysis.helper.sec_processor import SecProcessor
 from stock_analysis.helper.dataroma_processor import DataromaScraper
 from stock_analysis.helper.finviz_processor import FinvizScraper
@@ -199,17 +197,16 @@ class PipelineProcessor:
             
             self.logger.info("LLM pipeline completed successfully")
 
-            return respond_senior, respond_list
+            return {
+                'respond_insider': respond_insider,
+                'respond_low': respond_low,
+                'respond_screen': respond_screen,
+                'respond_combine': respond_combine,
+                'respond_senior': respond_senior,
+                'respond_list': respond_list,
+            }
         except Exception as e:
             self.logger.error(f"An error occurred in LLM pipeline: {str(e)}")
-
-    def _save_to_file(self, filename: str, content: str) -> None:
-        """
-        Save content to a text file.
-        """
-        file_path = os.path.join('data', filename)
-        with open(file_path, 'w+') as f:
-            f.write(content)
 
     def run_all_pipelines(self):
         try:

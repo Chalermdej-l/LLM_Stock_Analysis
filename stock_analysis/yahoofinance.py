@@ -1,8 +1,7 @@
 import logging
-from typing import Dict
-from dotenv import load_dotenv
-import os
 import sys
+
+from stock_analysis.settings import SQL_VARS, load_env
 from stock_analysis.helper.yahoo_processor import StockData
 from stock_analysis.helper.sql_processor import CloudSQLDatabase
 
@@ -10,32 +9,21 @@ from stock_analysis.helper.sql_processor import CloudSQLDatabase
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def load_environment_variables() -> Dict[str, str]:
-    """Load and return environment variables."""
-    load_dotenv('./.env')
-    return {
-        'sql_database': os.getenv('SQL_DATABASE'),
-        'sql_user': os.getenv('SQL_USER'),
-        'sql_password': os.getenv('SQL_PASSWORD'),
-        'sql_port': os.getenv('SQL_PORT'),
-        'sql_host': os.getenv('SQL_HOST')
-    }
-
 def main(stock_symbol_list: list):
     """
     Main function to load environment variables, initialize SQL helper and Finviz scraper, and update the database.
     """
     try:
         # Load environment variables
-        env_vars = load_environment_variables()
+        env_vars = load_env(SQL_VARS)
         logger.info("Load credential")
         # Initialize CloudSQLDatabase
         sql_helper = CloudSQLDatabase(
-            env_vars['sql_user'],
-            env_vars['sql_password'],
-            env_vars['sql_host'],
-            env_vars['sql_port'],
-            env_vars['sql_database'],
+            env_vars['SQL_USER'],
+            env_vars['SQL_PASSWORD'],
+            env_vars['SQL_HOST'],
+            env_vars['SQL_PORT'],
+            env_vars['SQL_DATABASE'],
             big_flag=True,
             logger=logger
         )

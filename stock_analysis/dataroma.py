@@ -1,29 +1,13 @@
-import json
 import logging
-from typing import Dict, List
-import os
-
-from dotenv import load_dotenv
 import pandas as pd
 
+from stock_analysis.settings import SQL_VARS, load_env
 from stock_analysis.helper.sql_processor import CloudSQLDatabase
 from stock_analysis.helper.dataroma_processor import DataromaScraper
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-def load_environment_variables() -> Dict[str, str]:
-    """Load and return environment variables."""
-    load_dotenv('./.env')
-    required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST']
-    env_vars = {var: os.getenv(var) for var in required_vars}
-    
-    missing_vars = [var for var, value in env_vars.items() if value is None]
-    if missing_vars:
-        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-    
-    return env_vars
 
 def update_table(sql_helper: CloudSQLDatabase, table_name: str, df: pd.DataFrame) -> None:
     """Create or update a table with the given DataFrame."""
@@ -36,7 +20,7 @@ def update_table(sql_helper: CloudSQLDatabase, table_name: str, df: pd.DataFrame
 
 def main():
     try:
-        env_vars = load_environment_variables()
+        env_vars = load_env(SQL_VARS)
         sql_helper = CloudSQLDatabase(
             env_vars['SQL_USER'],
             env_vars['SQL_PASSWORD'],

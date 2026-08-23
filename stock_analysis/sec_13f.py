@@ -2,26 +2,14 @@ import json
 import logging
 from typing import Dict
 
-from dotenv import load_dotenv
 import pandas as pd
-import os
+from stock_analysis.settings import SQL_VARS, load_env
 from stock_analysis.helper.sec_processor import SecProcessor
 from stock_analysis.helper.sql_processor import CloudSQLDatabase
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-def load_environment_variables() -> Dict[str, str]:
-    """Load and return environment variables."""
-    load_dotenv('./.env')
-    return {
-        'sql_database': os.getenv('SQL_DATABASE'),
-        'sql_user': os.getenv('SQL_USER'),
-        'sql_password': os.getenv('SQL_PASSWORD'),
-        'sql_port': os.getenv('SQL_PORT'),
-        'sql_host': os.getenv('SQL_HOST')
-    }
 
 def load_cik_list(file_path: str) -> Dict:
     """Load CIK list from a JSON file."""
@@ -51,11 +39,11 @@ def process_sec_data(cik_list: Dict) -> pd.DataFrame:
 def insert_data_to_sql(df: pd.DataFrame, env_vars: Dict[str, str]) -> None:
     """Insert data into SQL database."""
     sql_helper = CloudSQLDatabase(
-        env_vars['sql_user'],
-        env_vars['sql_password'],
-        env_vars['sql_host'],
-        env_vars['sql_port'],
-        env_vars['sql_database'],
+        env_vars['SQL_USER'],
+        env_vars['SQL_PASSWORD'],
+        env_vars['SQL_HOST'],
+        env_vars['SQL_PORT'],
+        env_vars['SQL_DATABASE'],
         big_flag=True,
         logger=logger
     )
@@ -75,7 +63,7 @@ def insert_data_to_sql(df: pd.DataFrame, env_vars: Dict[str, str]) -> None:
 
 def main():
     try:
-        env_vars = load_environment_variables()
+        env_vars = load_env(SQL_VARS)
         cik_list = load_cik_list('./data/CIK_LIST.json')
         df_sec = process_sec_data(cik_list)
         insert_data_to_sql(df_sec, env_vars)

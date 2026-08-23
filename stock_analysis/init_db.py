@@ -1,33 +1,13 @@
+import json
 import logging
 from typing import Dict
-import os
-from dotenv import load_dotenv
+
 from sqlalchemy import create_engine, text, inspect
-import json
+from stock_analysis.settings import SQL_VARS, build_db_url, load_env
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-def load_environment_variables() -> Dict[str, str]:
-    """Load and validate required environment variables."""
-    load_dotenv('./.env')
-    required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST', 'MODEL', 'API_KEY', 'PROJECT_ID', 'REGION_NAME', 'DATABASE_NAME']
-    env_vars = {var: os.getenv(var) for var in required_vars}
-    env_vars['DB_URL'] = ':'.join([env_vars['PROJECT_ID'],env_vars['REGION_NAME'],env_vars['DATABASE_NAME']])
-    
-    missing_vars = [var for var, value in env_vars.items() if value is None]
-    if missing_vars:
-        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-    
-    return env_vars
-
-def save_to_file(filename: str, content: str) -> None:
-    """Save content to a text file."""
-    file_path = os.path.join('data', filename)
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w+') as f:
-        f.write(content)
 
 def create_tables(engine, table_queries: Dict[str, str]):
     """
@@ -61,10 +41,8 @@ def create_tables(engine, table_queries: Dict[str, str]):
 def main():
     """Main function."""
     try:
-        env_vars = load_environment_variables()
-
-        db_url = f"postgresql+psycopg2://{env_vars['SQL_USER']}:{env_vars['SQL_PASSWORD']}@{env_vars['SQL_HOST']}:{env_vars['SQL_PORT']}/{env_vars['SQL_DATABASE']}"
-        engine = create_engine(db_url)
+        env_vars = load_env(SQL_VARS + ['MODEL', 'API_KEY', 'PROJECT_ID', 'REGION_NAME', 'DATABASE_NAME'])
+        engine = create_engine(build_db_url(env_vars))
 
         with open('./data/DB_INIT.json', 'r') as f:
             table_creation_queries = json.load(f)

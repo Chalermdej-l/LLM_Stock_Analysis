@@ -3,8 +3,7 @@ import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 import hmac
 import logging
-import os
-from dotenv import load_dotenv
+from stock_analysis.settings import build_db_url, load_env
 from stock_analysis.helper.pipeline_processor import PipelineProcessor
 from stock_analysis.helper.stock_detail import StockDetail
 from chainlit.types import ThreadDict
@@ -14,24 +13,23 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-load_dotenv('./.env')
 required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST', 'MAGIC_USER', 'MAGIC_PW', 'MODEL', 'API_KEY']
 chat_vars = ['SQL_READONLY_USER', 'SQL_READONLY_PASSWORD', 'SQL_HOST', 'SQL_PORT', 'SQL_DATABASE']
 auth_vars = ['CHAINLIT_AUTH_USERNAME', 'CHAINLIT_AUTH_PASSWORD']
-env_vars = {var: os.getenv(var) for var in required_vars}
-chat_env = {var: os.getenv(var) for var in chat_vars}
-missing = [var for var in required_vars + chat_vars + auth_vars if not os.getenv(var)]
-if missing:
-    raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")
-auth_username = os.getenv('CHAINLIT_AUTH_USERNAME')
-auth_password = os.getenv('CHAINLIT_AUTH_PASSWORD')
+try:
+    env_vars = load_env(required_vars + chat_vars + auth_vars)
+except ValueError as e:
+    raise SystemExit(str(e))
+chat_env = {var: env_vars[var] for var in chat_vars}
+auth_username = env_vars['CHAINLIT_AUTH_USERNAME']
+auth_password = env_vars['CHAINLIT_AUTH_PASSWORD']
 
 # Initialize processors
 pipeline_processor = PipelineProcessor(env_vars=env_vars, logger=logger, chat_env=chat_env)
 stock_detail_processor = StockDetail(logger=logger, env_vars=env_vars)
 
 # Set up connection string for SQLAlchemy
-con_string = f'postgresql+asyncpg://{env_vars["SQL_USER"]}:{env_vars["SQL_PASSWORD"]}@{env_vars["SQL_HOST"]}:{env_vars["SQL_PORT"]}/{env_vars["SQL_DATABASE"]}'
+con_string = build_db_url(env_vars, driver='asyncpg')
 cl_data._data_layer = SQLAlchemyDataLayer(conninfo=con_string)
 
 # Define a step to process the LLM request
@@ -59,9 +57,12 @@ async def on_run_pipeline(action: cl.Action):
 @cl.action_callback("Summarize Pipeline")
 async def on_summarize_pipeline(action: cl.Action):
     logger.info("The user clicked on the action button!")
-    respond_senior, _ = await cl.make_async(pipeline_processor.run_llm_pipelines)()
-    stock_detail_processor.process_yahoo_finance_pipeline(_)
-    await cl.Message(content=respond_senior).send()
+    reports = await cl.make_async(pipeline_processor.run_llm_pipelines)()
+    if not reports:
+        await cl.Message(content='Summarize pipeline failed. Check server logs.').send()
+        return 'Pipeline has failed'
+    stock_detail_processor.process_yahoo_finance_pipeline(reports['respond_list'])
+    await cl.Message(content=reports['respond_senior']).send()
     return 'Pipeline has run successfully'
 
 # Resume chat context
