@@ -13,7 +13,7 @@ class FinvizScraper:
         self.df = None
     
     def fetch_data(self):
-        response = requests.get(self.url, headers=self.header)
+        response = requests.get(self.url, headers=self.header, timeout=(5, 30))
         if response.status_code == 200:
             soup = bs(response.content, 'html.parser')
             table = soup.find('table', class_='styled-table-new is-rounded is-tabular-nums w-full screener_table')

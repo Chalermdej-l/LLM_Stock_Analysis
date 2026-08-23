@@ -30,14 +30,15 @@ class StockData:
             self.logger.error(f"Unexpected result type: {type(result)}")
             return True
         
-    def _retry_operation(self, operation, max_retries=0, delay=1):
+    def _retry_operation(self, operation, max_retries=3, delay=1):
         for attempt in range(max_retries + 1):
             try:
                 result = operation()
                 if self._is_empty(result):
                     if attempt < max_retries:
-                        self.logger.error(f"Attempt {attempt + 1} failed. Retrying in {delay} second(s)...")
-                        time.sleep(delay)
+                        wait = delay * (2 ** attempt)
+                        self.logger.error(f"Attempt {attempt + 1} failed. Retrying in {wait} second(s)...")
+                        time.sleep(wait)
                         self.company = yf.Ticker(self.ticker)
                     else:
                         self.logger.error(f"All attempts failed. Last error: {result}")
@@ -47,8 +48,9 @@ class StockData:
             except Exception as e:
                 self.logger.error(f"Error during operation: {str(e)}")
                 if attempt < max_retries:
-                    self.logger.info(f"Retrying operation after {delay} seconds...")
-                    time.sleep(delay)
+                    wait = delay * (2 ** attempt)
+                    self.logger.info(f"Retrying operation after {wait} seconds...")
+                    time.sleep(wait)
                 else:
                     self.logger.error(f"All attempts failed due to error: {str(e)}")
                     return pd.DataFrame()

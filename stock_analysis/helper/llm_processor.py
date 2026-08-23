@@ -6,7 +6,7 @@ from groq import Groq
 class LLMProcessor:
     def __init__(self, api_key, model):
         api_key = api_key
-        self.client = Groq(api_key=api_key)
+        self.client = Groq(api_key=api_key, timeout=120, max_retries=2)
         self.today = datetime.datetime.today().strftime('%Y-%m-%d')
         self.model = model
 
@@ -70,8 +70,8 @@ class LLMProcessor:
                                                )
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
-        print(f' Query generate : {tool_calls[0].function.arguments}')
         if tool_calls:
+            print(f' Query generate : {tool_calls[0].function.arguments}')
             available_functions = {
                 "sql_query_executor": tool_function,
             }

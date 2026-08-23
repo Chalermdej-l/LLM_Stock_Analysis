@@ -48,7 +48,7 @@ async def process_llm_request():
 
 # Action callback to run the pipeline
 @cl.action_callback("Run Pipeline")
-async def on_action(action: cl.Action):
+async def on_run_pipeline(action: cl.Action):
     logger.info("The user clicked on the action button!")
     await cl.make_async(pipeline_processor.run_all_pipelines)()
     msg = cl.Message(content='Pipeline finish running!')
@@ -57,7 +57,7 @@ async def on_action(action: cl.Action):
 
 # Action callback to summarize the pipeline results
 @cl.action_callback("Summarize Pipeline")
-async def on_action(action: cl.Action):
+async def on_summarize_pipeline(action: cl.Action):
     logger.info("The user clicked on the action button!")
     respond_senior, _ = await cl.make_async(pipeline_processor.run_llm_pipelines)()
     stock_detail_processor.process_yahoo_finance_pipeline(_)
@@ -69,7 +69,7 @@ async def on_action(action: cl.Action):
 async def on_chat_resume(thread: ThreadDict):
     result = await process_llm_request()
     if result:
-        response = await cl.Message(content=result.choices[0].message.content).send()
+        response = await cl.Message(content=result).send()
         await response.update()
 
 # Authentication callback

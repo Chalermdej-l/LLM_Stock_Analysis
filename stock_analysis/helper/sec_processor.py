@@ -35,7 +35,7 @@ class SecProcessor:
         try:
             url = f"{self.BASE_URL}CIK{cik}.json"
             # self.logger.info(f"Fetching URL: {url}")
-            response = requests.get(url, headers=self.HEADERS)
+            response = requests.get(url, headers=self.HEADERS, timeout=(5, 30))
             response.raise_for_status()
             data = response.json()
             filings = data['filings']['recent']
@@ -73,7 +73,7 @@ class SecProcessor:
 
     def _make_request(self, url):
         try:
-            response = requests.get(url, headers=self.HEADERS)
+            response = requests.get(url, headers=self.HEADERS, timeout=(5, 30))
             response.raise_for_status()
             return response
         except RequestException as e:

@@ -14,7 +14,7 @@ class DataromaScraper:
 
     def make_request(self, path_url):
         url = self.base_url + path_url
-        result = requests.get(url, headers=self.header)
+        result = requests.get(url, headers=self.header, timeout=(5, 30))
         return result
 
     def get_soup_page_list(self, soup):    
@@ -87,7 +87,7 @@ class DataromaScraper:
 
     def scrape_home_data(self):
         url = 'https://www.dataroma.com/m/home.php'
-        result = requests.get(url, headers=self.header)
+        result = requests.get(url, headers=self.header, timeout=(5, 30))
         soup = BeautifulSoup(result.text, 'html.parser')
         tables = soup.find_all('table')
 

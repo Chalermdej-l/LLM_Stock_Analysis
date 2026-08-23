@@ -15,7 +15,7 @@ class MagicFormulaInvesting:
 
     def login(self):
         # Get the login page to retrieve the token
-        login_page = self.session.get(self.login_url)
+        login_page = self.session.get(self.login_url, timeout=(5, 30))
         soup = BeautifulSoup(login_page.text, 'html.parser')
 
         # Find the __RequestVerificationToken value
@@ -25,7 +25,7 @@ class MagicFormulaInvesting:
         self.credentials['__RequestVerificationToken'] = token
 
         # Perform the login
-        response = self.session.post(self.login_url, data=self.credentials)
+        response = self.session.post(self.login_url, data=self.credentials, timeout=(5, 30))
 
         # Check if login was successful
         if "Logout" in response.text:
@@ -47,7 +47,7 @@ class MagicFormulaInvesting:
         }
 
         # Submit the form to get the stock screening results
-        screening_response = self.session.post(self.screening_url, data=screening_data)
+        screening_response = self.session.post(self.screening_url, data=screening_data, timeout=(5, 30))
         soup = BeautifulSoup(screening_response.text, 'html.parser')
 
         # Find the table with stock data
