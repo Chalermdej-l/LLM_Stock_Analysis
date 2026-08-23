@@ -23,3 +23,15 @@ variable "db_password" {
   description = "The database password"
   type        = string
 }
+
+variable "db_readonly_user" {
+  description = "The read-only database user for the chat UI"
+  type        = string
+  default     = "chat_readonly"
+}
+
+variable "db_readonly_password" {
+  description = "The password for the read-only database user"
+  type        = string
+  sensitive   = true
+}

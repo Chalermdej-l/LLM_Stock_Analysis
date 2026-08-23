@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Dict
 import pandas as pd
 import os
@@ -11,7 +12,9 @@ from stock_analysis.helper.sql_processor import CloudSQLDatabase
 from stock_analysis.helper.llm_processor import LLMProcessor
 
 class PipelineProcessor:
-    def __init__(self, env_vars: Dict[str, str], logger):
+    _READONLY_QUERY = re.compile(r"^\s*(?:select|with)\b", re.IGNORECASE)
+
+    def __init__(self, env_vars: Dict[str, str], logger, chat_env: Dict[str, str] = None):
         self.logger = logger
         self.env_vars = env_vars
         self.sql_helper = CloudSQLDatabase(
@@ -23,6 +26,18 @@ class PipelineProcessor:
             big_flag=True,
             logger=logger
         )
+        if chat_env is not None:
+            self.chat_sql_helper = CloudSQLDatabase(
+                chat_env['SQL_READONLY_USER'],
+                chat_env['SQL_READONLY_PASSWORD'],
+                chat_env['SQL_HOST'],
+                chat_env['SQL_PORT'],
+                chat_env['SQL_DATABASE'],
+                big_flag=False,
+                logger=logger
+            )
+        else:
+            self.chat_sql_helper = self.sql_helper
         self.llm_helper = LLMProcessor(self.env_vars['API_KEY'], self.env_vars['MODEL'])
 
     def load_cik_list(self, file_path: str) -> Dict:
@@ -217,12 +232,18 @@ class PipelineProcessor:
             self.logger.error(f"An error occurred while running pipelines: {str(e)}")
 
     def sql_query_executor(self, sql_query):
-        """Accept PostgreSQL query and execute the query on the database"""
+        """Accept a read-only PostgreSQL query and execute it with the chat (read-only) connection."""
+        if not self._READONLY_QUERY.match(sql_query):
+            self.logger.warning("Rejected non-SELECT query from LLM: %.200s", sql_query)
+            return json.dumps({"error": "Only SELECT and WITH queries are allowed."})
         try:
-            result = self.sql_helper.fetch_data(sql_query)
+            result = self.chat_sql_helper.fetch_data(sql_query)
+            if result is None:
+                return json.dumps({"error": "Query failed. See server logs."})
             return json.dumps({"result": result.to_dict(orient='records')})
-        except:
-            return json.dumps({"error": "Invalid expression"})
+        except Exception:
+            self.logger.exception("SQL tool query failed")
+            return json.dumps({"error": "Query failed. See server logs."})
 
 
     def route_prompt(self, prompt_object: list):

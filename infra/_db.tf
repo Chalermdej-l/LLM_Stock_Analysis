@@ -21,3 +21,10 @@ resource "google_sql_user" "users" {
   instance = google_sql_database_instance.postgres.name
   password = var.db_password
 }
+
+resource "google_sql_user" "chat_readonly" {
+  name     = var.db_readonly_user
+  instance = google_sql_database_instance.postgres.name
+  password = var.db_readonly_password
+  type     = "READONLY"
+}

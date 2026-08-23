@@ -1,6 +1,7 @@
 import chainlit as cl
 import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+import hmac
 import logging
 import os
 from dotenv import load_dotenv
@@ -15,10 +16,18 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv('./.env')
 required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST', 'MAGIC_USER', 'MAGIC_PW', 'MODEL', 'API_KEY']
+chat_vars = ['SQL_READONLY_USER', 'SQL_READONLY_PASSWORD', 'SQL_HOST', 'SQL_PORT', 'SQL_DATABASE']
+auth_vars = ['CHAINLIT_AUTH_USERNAME', 'CHAINLIT_AUTH_PASSWORD']
 env_vars = {var: os.getenv(var) for var in required_vars}
+chat_env = {var: os.getenv(var) for var in chat_vars}
+missing = [var for var in required_vars + chat_vars + auth_vars if not os.getenv(var)]
+if missing:
+    raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")
+auth_username = os.getenv('CHAINLIT_AUTH_USERNAME')
+auth_password = os.getenv('CHAINLIT_AUTH_PASSWORD')
 
 # Initialize processors
-pipeline_processor = PipelineProcessor(env_vars=env_vars, logger=logger)
+pipeline_processor = PipelineProcessor(env_vars=env_vars, logger=logger, chat_env=chat_env)
 stock_detail_processor = StockDetail(logger=logger, env_vars=env_vars)
 
 # Set up connection string for SQLAlchemy
@@ -66,11 +75,13 @@ async def on_chat_resume(thread: ThreadDict):
 # Authentication callback
 @cl.password_auth_callback
 def auth_callback(username: str, password: str):
-    # Authenticate user
-    if (username, password) == ("admin", "admin"):
-        return cl.User(identifier="admin", metadata={"role": "admin", "provider": "credentials"})
-    else:
-        return None
+    # Authenticate user against the CHAINLIT_AUTH_* environment variables
+    if (
+        hmac.compare_digest(username.encode('utf-8'), auth_username.encode('utf-8'))
+        and hmac.compare_digest(password.encode('utf-8'), auth_password.encode('utf-8'))
+    ):
+        return cl.User(identifier=username, metadata={"role": "admin", "provider": "credentials"})
+    return None
 
 # Start a new chat session
 @cl.on_chat_start
