@@ -1,7 +1,7 @@
 import concurrent.futures
 import pandas as pd
-from helper.yahoo_processor import StockData
-from helper.sql_processor import CloudSQLDatabase
+from stock_analysis.helper.yahoo_processor import StockData
+from stock_analysis.helper.sql_processor import CloudSQLDatabase
 class StockDetail:
     def __init__(self, logger, env_vars, max_workers=8):
         """

@@ -4,8 +4,8 @@ import os
 
 from dotenv import load_dotenv
 
-from helper.sql_processor import CloudSQLDatabase
-from helper.magic_processor import MagicFormulaInvesting
+from stock_analysis.helper.sql_processor import CloudSQLDatabase
+from stock_analysis.helper.magic_processor import MagicFormulaInvesting
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

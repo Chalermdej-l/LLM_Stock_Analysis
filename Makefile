@@ -1,13 +1,13 @@
 get-screen-data:
-	python code/dataroma.py	
-	python code/finviz.py
-	python code/magic.py	
-	python code/sec_13f.py
+	python stock_analysis/dataroma.py
+	python stock_analysis/finviz.py
+	python stock_analysis/magic.py
+	python stock_analysis/sec_13f.py
 	sleep 1
-	python code/llm.py
+	python stock_analysis/llm.py
 
 llm-process:
-	python code/llm.py
+	python stock_analysis/llm.py
 
 infra-init:
 	terraform -chdir=infra init

@@ -6,8 +6,8 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 
-from helper.sql_processor import CloudSQLDatabase
-from helper.dataroma_processor import DataromaScraper
+from stock_analysis.helper.sql_processor import CloudSQLDatabase
+from stock_analysis.helper.dataroma_processor import DataromaScraper
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

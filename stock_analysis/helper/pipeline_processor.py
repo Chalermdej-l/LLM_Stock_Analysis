@@ -3,12 +3,12 @@ import logging
 from typing import Dict
 import pandas as pd
 import os
-from helper.sec_processor import SecProcessor
-from helper.dataroma_processor import DataromaScraper
-from helper.finviz_processor import FinvizScraper
-from helper.magic_processor import MagicFormulaInvesting
-from helper.sql_processor import CloudSQLDatabase
-from helper.llm_processor import LLMProcessor
+from stock_analysis.helper.sec_processor import SecProcessor
+from stock_analysis.helper.dataroma_processor import DataromaScraper
+from stock_analysis.helper.finviz_processor import FinvizScraper
+from stock_analysis.helper.magic_processor import MagicFormulaInvesting
+from stock_analysis.helper.sql_processor import CloudSQLDatabase
+from stock_analysis.helper.llm_processor import LLMProcessor
 
 class PipelineProcessor:
     def __init__(self, env_vars: Dict[str, str], logger):

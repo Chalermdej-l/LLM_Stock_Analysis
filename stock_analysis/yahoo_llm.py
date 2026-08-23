@@ -1,5 +1,5 @@
 import logging
-from yahoofinance import main as process_llm
+from stock_analysis.yahoofinance import main as process_llm
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

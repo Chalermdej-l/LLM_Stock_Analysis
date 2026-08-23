@@ -4,7 +4,7 @@ services:
     image: llm-chainlit:latest
     ports:
       - "8000:8000"
-    command: chainlit run -w /app/code/main-ui.py
+    command: chainlit run -w /app/stock_analysis/main_ui.py
     environment:
       - CHAINLIT_PORT=8000
       - CHAINLIT_HOST=0.0.0.0
@@ -15,7 +15,7 @@ services:
 
   init-db:
     image: llm-chainlit:latest
-    command: python /app/code/init_db.py
+    command: python /app/stock_analysis/init_db.py
     depends_on:
       - cloud-sql-proxy
     restart: on-failure

@@ -4,8 +4,8 @@ from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 import logging
 import os
 from dotenv import load_dotenv
-from helper.pipeline_processor import PipelineProcessor
-from helper.stock_detail import StockDetail
+from stock_analysis.helper.pipeline_processor import PipelineProcessor
+from stock_analysis.helper.stock_detail import StockDetail
 from chainlit.types import ThreadDict
 
 # Set up logging

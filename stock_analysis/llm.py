@@ -3,9 +3,9 @@ from typing import Dict
 import os
 import json
 from dotenv import load_dotenv
-from helper.sql_processor import CloudSQLDatabase
-from helper.llm_processor import LLMProcessor
-from yahoofinance import main as process_llm
+from stock_analysis.helper.sql_processor import CloudSQLDatabase
+from stock_analysis.helper.llm_processor import LLMProcessor
+from stock_analysis.yahoofinance import main as process_llm
 import pandas as pd
 
 # Set up logging

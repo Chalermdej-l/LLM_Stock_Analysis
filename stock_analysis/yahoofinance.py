@@ -3,8 +3,8 @@ from typing import Dict
 from dotenv import load_dotenv
 import os
 import sys
-from helper.yahoo_processor import StockData
-from helper.sql_processor import CloudSQLDatabase
+from stock_analysis.helper.yahoo_processor import StockData
+from stock_analysis.helper.sql_processor import CloudSQLDatabase
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

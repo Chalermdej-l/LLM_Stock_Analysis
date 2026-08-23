@@ -4,8 +4,8 @@ from typing import Dict
 
 from dotenv import load_dotenv
 
-from helper.sql_processor import CloudSQLDatabase
-from helper.finviz_processor import FinvizScraper
+from stock_analysis.helper.sql_processor import CloudSQLDatabase
+from stock_analysis.helper.finviz_processor import FinvizScraper
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

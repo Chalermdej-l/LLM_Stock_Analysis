@@ -5,8 +5,8 @@ from typing import Dict
 from dotenv import load_dotenv
 import pandas as pd
 import os
-from helper.sec_processor import SecProcessor
-from helper.sql_processor import CloudSQLDatabase
+from stock_analysis.helper.sec_processor import SecProcessor
+from stock_analysis.helper.sql_processor import CloudSQLDatabase
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

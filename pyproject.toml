@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-stock-analysis"
+version = "0.1.0"
+description = "Scrape fund and alternative market data, store it in Cloud SQL, and query it with a Groq-powered LLM via Chainlit."
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+include = ["stock_analysis*"]

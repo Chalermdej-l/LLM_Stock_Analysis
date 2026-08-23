@@ -13,8 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
 
 COPY .env .env
-COPY /code ./code
-COPY /data ./data
+COPY pyproject.toml ./
+COPY stock_analysis ./stock_analysis
+RUN pip install --no-cache-dir --no-deps .
+COPY data ./data
 
 
 
