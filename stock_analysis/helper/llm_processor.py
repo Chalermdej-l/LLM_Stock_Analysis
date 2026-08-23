@@ -4,14 +4,11 @@ import json
 from groq import Groq
 
 class LLMProcessor:
-    def __init__(self, api_key, model):
-        api_key = api_key
+    def __init__(self, api_key, model, model_tool=None):
         self.client = Groq(api_key=api_key, timeout=120, max_retries=2)
         self.today = datetime.datetime.today().strftime('%Y-%m-%d')
         self.model = model
-
-        # Set up logging
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.model_tool = model_tool
         self.logger = logging.getLogger(__name__)
 
     def chat_generate(self, system_prompt: str, prompt: str):
@@ -26,6 +23,7 @@ class LLMProcessor:
             stop=None,
             stream=False,
         )
+        self.logger.info(f"Groq completion usage: {chat_completion.usage}")
         return chat_completion
 
     def chat_generate_open_ai(self, prompt_object: list, model: str = None, tools: list = None):
@@ -40,6 +38,7 @@ class LLMProcessor:
             tool_choice='auto',
             tools=tools,
         )
+        self.logger.info(f"Groq completion usage: {chat_completion.usage}")
         return chat_completion
 
     def chat_generate_with_tool(self, prompt_object, tool_function):
@@ -66,12 +65,12 @@ class LLMProcessor:
         ]
         response =  self.chat_generate_open_ai(prompt_object=messages, 
                                                tools=tools, 
-                                               model='llama3-groq-70b-8192-tool-use-preview'
+                                               model=self.model_tool or self.model
                                                )
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
         if tool_calls:
-            print(f' Query generate : {tool_calls[0].function.arguments}')
+            self.logger.info(f"Query generated: {tool_calls[0].function.arguments}")
             available_functions = {
                 "sql_query_executor": tool_function,
             }

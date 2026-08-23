@@ -2,6 +2,14 @@ import logging
 import pandas as pd
 
 from stock_analysis.settings import SQL_VARS, load_env
+from stock_analysis.constants import (
+    DATAROMA_INSIDER_BUY_TABLE,
+    DATAROMA_SCREEN_INSIDER_TABLE,
+    DATAROMA_BIGBETS_TABLE,
+    DATAROMA_LOW_TABLE,
+    DATAROMA_INSIDER_SUPER_TABLE,
+    DATAROMA_INSIDER_BUY_PATH,
+)
 from stock_analysis.helper.sql_processor import CloudSQLDatabase
 from stock_analysis.helper.dataroma_processor import DataromaScraper
 
@@ -33,17 +41,16 @@ def main():
         scraper = DataromaScraper()
         
         # Scrape data
-        path_url = '/m/ins/ins.php?t=w&po=1&am=10000&sym=&o=fd&d=d&L=1'
-        df_insider_buy = scraper.scrape_insider_buy_data(path_url)
+        df_insider_buy = scraper.scrape_insider_buy_data(DATAROMA_INSIDER_BUY_PATH)
         df_insider_buy_home, df_bigbets, df_low, df_insider_super = scraper.scrape_home_data()
         
         # Define tables to update
         tables_to_update = [
-            ('dataroma_screen_insider', df_insider_buy_home),
-            ('dataroma_insider_buy', df_insider_buy),
-            ('dataroma_bigbets', df_bigbets),
-            ('dataroma_low', df_low),
-            ('dataroma_insider_super', df_insider_super)
+            (DATAROMA_SCREEN_INSIDER_TABLE, df_insider_buy_home),
+            (DATAROMA_INSIDER_BUY_TABLE, df_insider_buy),
+            (DATAROMA_BIGBETS_TABLE, df_bigbets),
+            (DATAROMA_LOW_TABLE, df_low),
+            (DATAROMA_INSIDER_SUPER_TABLE, df_insider_super)
         ]
         
         # Update tables

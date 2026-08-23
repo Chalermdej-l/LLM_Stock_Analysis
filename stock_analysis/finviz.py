@@ -1,6 +1,7 @@
 import logging
 
 from stock_analysis.settings import SQL_VARS, load_env
+from stock_analysis.constants import FINVIZ_SCREENER_URL, FINVIZ_SCREEN_TABLE
 from stock_analysis.helper.sql_processor import CloudSQLDatabase
 from stock_analysis.helper.finviz_processor import FinvizScraper
 
@@ -26,18 +27,12 @@ def main():
             logger=logger
         )
         
-        # Finviz scraper URL
-        url = ('https://finviz.com/screener.ashx?v=151&f=cap_microover,fa_curratio_o2,'
-               'fa_eps5years_o5,fa_opermargin_o10,fa_roe_pos,fa_sales5years_o5,geo_usa,'
-               'sh_insiderown_o10,sh_insidertrans_neg,sh_outstanding_o1,sh_price_o4,'
-               'ta_highlow52w_b30h&ft=4&o=change')
-        
         # Initialize FinvizScraper and fetch data
-        scraper = FinvizScraper(url)
+        scraper = FinvizScraper(FINVIZ_SCREENER_URL)
         scraper.fetch_data()
         
         # Table name for SQL database
-        table_name = 'finviz_screen'
+        table_name = FINVIZ_SCREEN_TABLE
         
         # Create table and insert data
         sql_helper.create_table(table_name, scraper.df.dtypes)

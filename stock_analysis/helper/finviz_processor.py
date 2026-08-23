@@ -1,3 +1,4 @@
+import logging
 import requests
 from bs4 import BeautifulSoup as bs
 import pandas as pd
@@ -6,6 +7,7 @@ import datetime
 class FinvizScraper:
     def __init__(self, url):
         self.url = url
+        self.logger = logging.getLogger(__name__)
         self.header = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.142.86 Safari/537.36",
         }
@@ -20,9 +22,9 @@ class FinvizScraper:
             if table:
                 self.extract_data(table)
             else:
-                print("Table not found in the HTML.")
+                self.logger.warning("Table not found in the HTML.")
         else:
-            print(f"Failed to retrieve data. Status code: {response.status_code}")
+            self.logger.warning(f"Failed to retrieve data. Status code: {response.status_code}")
 
     def extract_data(self, table):
         td_tags = table.find_all('td')

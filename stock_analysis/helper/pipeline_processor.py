@@ -2,6 +2,18 @@ import json
 import re
 from typing import Dict
 import pandas as pd
+from stock_analysis.constants import (
+    SEC_13F_TABLE,
+    DATAROMA_INSIDER_BUY_TABLE,
+    DATAROMA_SCREEN_INSIDER_TABLE,
+    DATAROMA_BIGBETS_TABLE,
+    DATAROMA_LOW_TABLE,
+    DATAROMA_INSIDER_SUPER_TABLE,
+    FINVIZ_SCREEN_TABLE,
+    MAGIC_SCREEN_TABLE,
+    FINVIZ_SCREENER_URL,
+    DATAROMA_INSIDER_BUY_PATH,
+)
 from stock_analysis.helper.sec_processor import SecProcessor
 from stock_analysis.helper.dataroma_processor import DataromaScraper
 from stock_analysis.helper.finviz_processor import FinvizScraper
@@ -36,7 +48,7 @@ class PipelineProcessor:
             )
         else:
             self.chat_sql_helper = self.sql_helper
-        self.llm_helper = LLMProcessor(self.env_vars['API_KEY'], self.env_vars['MODEL'])
+        self.llm_helper = LLMProcessor(self.env_vars['API_KEY'], self.env_vars['MODEL'], self.env_vars.get('MODEL_TOOL'))
 
     def load_cik_list(self, file_path: str) -> Dict:
         try:
@@ -50,7 +62,7 @@ class PipelineProcessor:
             raise
 
     def process_sec_data(self, cik_list: Dict) -> pd.DataFrame:
-        processor = SecProcessor(cik_list)
+        processor = SecProcessor(cik_list, self.env_vars['SEC_USER_AGENT'])
         df = processor.process_all_funds()
         
         numeric_columns = ['value', 'voting_sole', 'voting_shared', 'voting_none', 'prn_amt']
@@ -73,7 +85,7 @@ class PipelineProcessor:
         try:
             cik_list = self.load_cik_list('./data/CIK_LIST.json')
             df_sec = self.process_sec_data(cik_list)
-            self.insert_data_to_sql(df_sec, 'sec_13f')
+            self.insert_data_to_sql(df_sec, SEC_13F_TABLE)
             self.logger.info("SEC data processing and insertion completed successfully.")
         except Exception as e:
             self.logger.error(f"An error occurred in SEC pipeline: {str(e)}")
@@ -82,16 +94,15 @@ class PipelineProcessor:
         try:
             scraper = DataromaScraper()
             
-            path_url = '/m/ins/ins.php?t=w&po=1&am=10000&sym=&o=fd&d=d&L=1'
-            df_insider_buy = scraper.scrape_insider_buy_data(path_url)
+            df_insider_buy = scraper.scrape_insider_buy_data(DATAROMA_INSIDER_BUY_PATH)
             df_insider_buy_home, df_bigbets, df_low, df_insider_super = scraper.scrape_home_data()
             
             tables_to_update = [
-                ('dataroma_screen_insider', df_insider_buy_home),
-                ('dataroma_insider_buy', df_insider_buy),
-                ('dataroma_bigbets', df_bigbets),
-                ('dataroma_low', df_low),
-                ('dataroma_insider_super', df_insider_super)
+                (DATAROMA_SCREEN_INSIDER_TABLE, df_insider_buy_home),
+                (DATAROMA_INSIDER_BUY_TABLE, df_insider_buy),
+                (DATAROMA_BIGBETS_TABLE, df_bigbets),
+                (DATAROMA_LOW_TABLE, df_low),
+                (DATAROMA_INSIDER_SUPER_TABLE, df_insider_super)
             ]
             
             for table_name, df in tables_to_update:
@@ -103,15 +114,10 @@ class PipelineProcessor:
 
     def process_finviz_pipeline(self):
         try:
-            url = ('https://finviz.com/screener.ashx?v=151&f=cap_microover,fa_curratio_o2,'
-                   'fa_eps5years_o5,fa_opermargin_o10,fa_roe_pos,fa_sales5years_o5,geo_usa,'
-                   'sh_insiderown_o10,sh_insidertrans_neg,sh_outstanding_o1,sh_price_o4,'
-                   'ta_highlow52w_b30h&ft=4&o=change')
-            
-            scraper = FinvizScraper(url)
+            scraper = FinvizScraper(FINVIZ_SCREENER_URL)
             scraper.fetch_data()
-            
-            self.insert_data_to_sql(scraper.df, 'finviz_screen')
+
+            self.insert_data_to_sql(scraper.df, FINVIZ_SCREEN_TABLE)
             self.logger.info("Finviz pipeline completed successfully")
         except Exception as e:
             self.logger.error(f"An error occurred in Finviz pipeline: {str(e)}")
@@ -123,7 +129,7 @@ class PipelineProcessor:
             mfi = MagicFormulaInvesting(email, password)
             stock_df = mfi.get_stock_screening()
             
-            self.insert_data_to_sql(stock_df, 'magic_screen')
+            self.insert_data_to_sql(stock_df, MAGIC_SCREEN_TABLE)
             self.logger.info("Magic Formula pipeline completed successfully")
         except Exception as e:
             self.logger.error(f"An error occurred in Magic Formula pipeline: {str(e)}")
@@ -250,11 +256,11 @@ class PipelineProcessor:
             {"role": "system", "content": self.llm_helper.get_system_route()},
             {"role": "user", "content": last_respond}
             ]
-        route_result  = self.llm_helper.chat_generate_open_ai(prompt_object=prompt_object_route, model='llama3-70b-8192')
+        route_result  = self.llm_helper.chat_generate_open_ai(prompt_object=prompt_object_route)
 
         if route_result.choices[0].message.content == 'toolbot':
-            print('Calling tool')
+            self.logger.info('Routing to tool agent')
             return self.llm_helper.chat_generate_with_tool(prompt_object=prompt_object, tool_function=self.sql_query_executor)
         else:
-            print('Calling chat')
+            self.logger.info('Routing to chat model')
             return self.llm_helper.chat_generate_open_ai(prompt_object=prompt_object)

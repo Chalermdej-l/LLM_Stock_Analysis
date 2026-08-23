@@ -1,3 +1,4 @@
+import logging
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -5,6 +6,7 @@ import datetime
 
 class MagicFormulaInvesting:
     def __init__(self, email, password):
+        self.logger = logging.getLogger(__name__)
         self.login_url = "https://www.magicformulainvesting.com/Account/LogOn"
         self.screening_url = "https://www.magicformulainvesting.com/Screening/StockScreening"
         self.credentials = {
@@ -29,10 +31,10 @@ class MagicFormulaInvesting:
 
         # Check if login was successful
         if "Logout" in response.text:
-            print("Login successful!")
+            self.logger.info("Login successful.")
             return True
         else:
-            print("Login failed!")
+            self.logger.warning("Login failed.")
             return False
 
     def get_stock_screening(self, minimum_market_cap='50', select_30=False):

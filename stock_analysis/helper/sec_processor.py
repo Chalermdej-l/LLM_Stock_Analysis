@@ -14,20 +14,16 @@ pd.options.mode.chained_assignment = None
 
 class SecProcessor:
     BASE_URL = "https://data.sec.gov/submissions/"
-    HEADERS = {
-        "User-Agent": "Test Project (Test_Project@test.com)"
-    }
     RATE_LIMIT = 5  # requests per second
     RATE_LIMIT_PERIOD = 1  # second
 
-    def __init__(self, cik_list, max_workers=5):
+    def __init__(self, cik_list, user_agent, max_workers=5):
         self.cik_list = cik_list
         self.max_workers = max_workers
-        self.logger = self._setup_logger()
-
-    def _setup_logger(self):
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-        return logging.getLogger(__name__)
+        self.headers = {
+            "User-Agent": user_agent
+        }
+        self.logger = logging.getLogger(__name__)
 
     @sleep_and_retry
     @limits(calls=RATE_LIMIT, period=RATE_LIMIT_PERIOD)
@@ -35,7 +31,7 @@ class SecProcessor:
         try:
             url = f"{self.BASE_URL}CIK{cik}.json"
             # self.logger.info(f"Fetching URL: {url}")
-            response = requests.get(url, headers=self.HEADERS, timeout=(5, 30))
+            response = requests.get(url, headers=self.headers, timeout=(5, 30))
             response.raise_for_status()
             data = response.json()
             filings = data['filings']['recent']
@@ -73,7 +69,7 @@ class SecProcessor:
 
     def _make_request(self, url):
         try:
-            response = requests.get(url, headers=self.HEADERS, timeout=(5, 30))
+            response = requests.get(url, headers=self.headers, timeout=(5, 30))
             response.raise_for_status()
             return response
         except RequestException as e:

@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST', 'MAGIC_USER', 'MAGIC_PW', 'MODEL', 'API_KEY']
+required_vars = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST', 'MAGIC_USER', 'MAGIC_PW', 'MODEL', 'MODEL_TOOL', 'SEC_USER_AGENT', 'API_KEY']
 chat_vars = ['SQL_READONLY_USER', 'SQL_READONLY_PASSWORD', 'SQL_HOST', 'SQL_PORT', 'SQL_DATABASE']
 auth_vars = ['CHAINLIT_AUTH_USERNAME', 'CHAINLIT_AUTH_PASSWORD']
 try:
@@ -42,7 +42,7 @@ async def process_llm_request():
             return respond.choices[0].message.content
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}", exc_info=True)
-        return f"Apologize , We can't process your requests. {str(e)} . Please try again."
+        return f"Sorry, we couldn't process your request: {e}. Please try again."
 
 # Action callback to run the pipeline
 @cl.action_callback("Run Pipeline")
@@ -101,7 +101,7 @@ async def main(message: cl.Message):
         response = await cl.Message(content=result).send()
         await response.update()
     else:
-        response = await cl.Message(content='Aplogieze ').send()
+        response = await cl.Message(content='Sorry, something went wrong. Please try again.').send()
         await response.update()
 
 # Run the application

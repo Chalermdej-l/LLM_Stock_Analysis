@@ -84,6 +84,8 @@ class CloudSQLDatabase:
             self.logger.info(f"Table '{table_name}' does not exist.")
             return
 
+        data = data.copy()
+
         # Update the table schema with new columns if necessary
         self.update_table_schema(table_name, data)
 
@@ -107,20 +109,18 @@ class CloudSQLDatabase:
             data.to_sql(table_name, self.engine, if_exists='append', index=False)
             self.logger.info(f"Data inserted successfully into '{table_name}'")
         except Exception as e:
-            self.logger.info(f"Error while inserting data: {e}")
+            self.logger.error(f"Error while inserting data: {e}")
             self.session.rollback()
 
     def fetch_data(self, query):
+        if isinstance(query, dict):
+            query = query['query']
         try:
-            if isinstance(query,dict):
-                query = query['query']
-            query = text(query)
-            df = pd.read_sql(query, self.engine)
-
+            df = pd.read_sql(text(query), self.engine)
             return df
         except Exception as e:
             self.logger.error(f"Error while fetching data: {e}")
-            return None
+            raise
 
     def close_connection(self):
         self.session.close()
