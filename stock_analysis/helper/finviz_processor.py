@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup as bs
 import pandas as pd
 import datetime
 
+
 class FinvizScraper:
     def __init__(self, url):
         self.url = url
@@ -13,12 +14,12 @@ class FinvizScraper:
         }
         self.data = None
         self.df = None
-    
+
     def fetch_data(self):
         response = requests.get(self.url, headers=self.header, timeout=(5, 30))
         if response.status_code == 200:
-            soup = bs(response.content, 'html.parser')
-            table = soup.find('table', class_='styled-table-new is-rounded is-tabular-nums w-full screener_table')
+            soup = bs(response.content, "html.parser")
+            table = soup.find("table", class_="styled-table-new is-rounded is-tabular-nums w-full screener_table")
             if table:
                 self.extract_data(table)
             else:
@@ -27,16 +28,28 @@ class FinvizScraper:
             self.logger.warning(f"Failed to retrieve data. Status code: {response.status_code}")
 
     def extract_data(self, table):
-        td_tags = table.find_all('td')
+        td_tags = table.find_all("td")
         self.data = [td.get_text(strip=True) for td in td_tags]
         self.create_dataFrame()
 
     def create_dataFrame(self):
         # Assuming that 'data' contains a flat list of table cell values
         num_columns = 11  # Number of columns in the table
-        rows = [self.data[i:i + num_columns] for i in range(0, len(self.data), num_columns)]
-        
-        columns = ['index', 'ticker', 'company', 'sector', 'industry', 'country', 'market_cap', 'pe', 'volume', 'price', 'change']
+        rows = [self.data[i : i + num_columns] for i in range(0, len(self.data), num_columns)]
+
+        columns = [
+            "index",
+            "ticker",
+            "company",
+            "sector",
+            "industry",
+            "country",
+            "market_cap",
+            "pe",
+            "volume",
+            "price",
+            "change",
+        ]
         self.df = pd.DataFrame(rows, columns=columns)
-        self.df ['date_insert'] = datetime.datetime.today().strftime('%Y-%m-%d')
-        self.df.drop(columns=['index'], inplace=True)
+        self.df["date_insert"] = datetime.datetime.today().strftime("%Y-%m-%d")
+        self.df.drop(columns=["index"], inplace=True)

@@ -18,7 +18,6 @@ module "service_accounts" {
   }
 }
 
-
 resource "google_service_account_key" "service_account_key" {
   service_account_id = "llm-stock-sa"
 

@@ -3,10 +3,11 @@ import datetime
 import json
 from groq import Groq
 
+
 class LLMProcessor:
     def __init__(self, api_key, model, model_tool=None):
         self.client = Groq(api_key=api_key, timeout=120, max_retries=2)
-        self.today = datetime.datetime.today().strftime('%Y-%m-%d')
+        self.today = datetime.datetime.today().strftime("%Y-%m-%d")
         self.model = model
         self.model_tool = model_tool
         self.logger = logging.getLogger(__name__)
@@ -35,15 +36,15 @@ class LLMProcessor:
             top_p=1,
             stop=None,
             stream=False,
-            tool_choice='auto',
+            tool_choice="auto",
             tools=tools,
         )
         self.logger.info(f"Groq completion usage: {chat_completion.usage}")
         return chat_completion
 
     def chat_generate_with_tool(self, prompt_object, tool_function):
-        prompt_object[0]['content'] = self.get_system_tool()
-        messages= prompt_object.copy()
+        prompt_object[0]["content"] = self.get_system_tool()
+        messages = prompt_object.copy()
         tools = [
             {
                 "type": "function",
@@ -63,10 +64,7 @@ class LLMProcessor:
                 },
             }
         ]
-        response =  self.chat_generate_open_ai(prompt_object=messages, 
-                                               tools=tools, 
-                                               model=self.model_tool or self.model
-                                               )
+        response = self.chat_generate_open_ai(prompt_object=messages, tools=tools, model=self.model_tool or self.model)
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
         if tool_calls:
@@ -79,25 +77,22 @@ class LLMProcessor:
                 function_name = tool_call.function.name
                 function_to_call = available_functions[function_name]
                 function_args = json.loads(tool_call.function.arguments)
-                function_response = function_to_call(
-                    sql_query=function_args.get("sql_query")
-                )
-            
-                summerize_meesage=[
-                        {
-                            "role": "system",
-                            "content": "Your are a helpful assistance. Your task is to summarize the query result from user. Only summarize the data provide by the user. Please provide a brief explanation of the data and it result"
-                        },
-                        {
-                            "role": "user",
-                            "content":function_response,
-                        }
-                    ]
-            second_response = self.chat_generate_open_ai(prompt_object=summerize_meesage, model=self.model)    
+                function_response = function_to_call(sql_query=function_args.get("sql_query"))
+
+                summerize_meesage = [
+                    {
+                        "role": "system",
+                        "content": "Your are a helpful assistance. Your task is to summarize the query result from user. Only summarize the data provide by the user. Please provide a brief explanation of the data and it result",
+                    },
+                    {
+                        "role": "user",
+                        "content": function_response,
+                    },
+                ]
+            second_response = self.chat_generate_open_ai(prompt_object=summerize_meesage, model=self.model)
             return second_response
-    
-        
-    def process_query(self,system_prompt, prompt):
+
+    def process_query(self, system_prompt, prompt):
         chat_completion = self.chat_generate(system_prompt, prompt)
         return chat_completion.choices[0].message.content
 
@@ -132,7 +127,7 @@ class LLMProcessor:
         return invester_llm.choices[0].message.content
 
     def get_system_prompt_insider(self):
-        return '''
+        return """
         You are an assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for further review by a stock analyst.
         
         Objective:
@@ -170,10 +165,10 @@ class LLMProcessor:
         
         Reminder:
         Your role is to provide an initial analysis to guide further research. Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
-        '''
+        """
 
     def get_prompt_insider(self, insider_buying, insider_buying_with_superinvestor, custom_screener):
-        return f'''
+        return f"""
         Today is {self.today}
 
         Summarize the stock suggestion list base on the below data.
@@ -187,10 +182,10 @@ class LLMProcessor:
         c) Custom screener results with insider buying activity
         {custom_screener}
 
-        '''
+        """
 
     def get_system_prompt_52week_low(self):
-        return '''
+        return """
         You are an assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for review by a senior stock analyst.
 
         Objective:  
@@ -231,10 +226,10 @@ class LLMProcessor:
 
         Reminder:  
         Provide an initial analysis to guide further research. Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
-        '''
+        """
 
     def get_prompt_52week_low(self, df_weeklow, df, df_map, respond_insider):
-        return f'''
+        return f"""
         Summarize the stock suggestion list base on the below data.
 
         a) Stocks owned by Super Investors trading near 52-week lows.
@@ -248,10 +243,10 @@ class LLMProcessor:
 
         d) Insider report by another analyst.
         {respond_insider}
-        '''
+        """
 
     def get_system_prompt_custom_screener(self):
-        return '''
+        return """
         You are an assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for review by a senior stock analyst.
 
         Objective:  
@@ -287,10 +282,10 @@ class LLMProcessor:
 
         Reminder:  
         Provide an initial analysis to guide further research. Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
-        '''
+        """
 
     def get_prompt_custom_screener(self, df_screen, df_insider_buying, df_insider_buying_with_superinvestor, df_magic):
-        return f'''
+        return f"""
         Summarize the stock suggestion list base on the below data.
 
         a) Potential stocks based on insider buying activity.
@@ -304,10 +299,10 @@ class LLMProcessor:
 
         d) Custom screener results using Magic fomular.
         {df_magic}
-        '''
+        """
 
     def get_system_prompt_combined_screener(self):
-        return '''
+        return """
         You are an assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for review by a senior stock analyst.
 
         Objective:  
@@ -342,10 +337,10 @@ class LLMProcessor:
 
         Reminder:  
         Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
-        '''
+        """
 
     def get_prompt_combined_screener(self, respond_screen, df_custom, filing_13f):
-        return f'''
+        return f"""
         Summarize the stock suggestion list base on the below data.
 
        a) Custom screener by the client.
@@ -356,10 +351,10 @@ class LLMProcessor:
 
         c) Insider buying activity
         {respond_screen}
-        '''
+        """
 
     def get_system_prompt_senior_report(self):
-        return '''
+        return """
         You are an AI assistant specializing in stock analysis. Your task is to analyze provided data and generate insightful stock suggestions for review by a senior stock analyst.
 
         Objective:  
@@ -400,10 +395,10 @@ class LLMProcessor:
 
         Reminder:  
         Provide an initial analysis to guide further research. Be thorough in your reasoning but concise in your presentation. Avoid speculation beyond the provided data.
-        '''
+        """
 
     def get_prompt_senior_report(self, respond_insider, respond_low, respond_screen, respond_screen_combine):
-        return f'''
+        return f"""
         Summarize the stock suggestion list base on the below data.
 
         a) Insider report by another analyst.
@@ -417,10 +412,10 @@ class LLMProcessor:
 
         d) Combined screener results by another analyst.
         {respond_screen_combine}
-        '''
+        """
 
     def get_system_extract_list(self):
-        return '''You are a helpful assistance. 
+        return """You are a helpful assistance. 
         Your task is to extract stock ticker from the provided text. 
         Your respond should only be a list of the stocker ticker you found. 
         Do not add any explanation or instructions to your respond.
@@ -429,18 +424,18 @@ class LLMProcessor:
         EXAMPLE
 
         TICKER, TICKER, TICKER
-        '''
-    
+        """
+
     def get_promt_extract_list(self, respond):
-        return f'''
+        return f"""
         Extract the stock ticker from the below data.
         DATA
         ----
         {respond}
-        '''
-    
+        """
+
     def get_system_route(self):
-        return '''
+        return """
         # Router Assistant Prompt
 
         You are a router assistant for stock-related queries. Your task is to determine which LLM should handle the user's prompt.
@@ -457,11 +452,11 @@ class LLMProcessor:
         ## Important Notes
         - Do not provide any introduction, explanation, or additional text
         - Respond solely with the chosen LLM option
-        '''
-           
+        """
+
     def get_system_tool(self):
-        current_date = datetime.datetime.today().strftime('%Y-%m-%d')
-        return f'''
+        current_date = datetime.datetime.today().strftime("%Y-%m-%d")
+        return f"""
         You are an SQL analysis assistant. Your task is to analyze data from a PostgreSQL database.
         You will be given a tool to query the database. To use this tool, you need to come up with a valid PostgreSQL query.
 
@@ -551,4 +546,4 @@ class LLMProcessor:
         - For any date column use in where clause cast them to date first example cast(date as date)
         - If ask to find data relate to date alway use BETWEEN to query the date example WHERE date between '2023-01-01' to '2023-12-31
         - If there are no data return respond with "No data available for the symbol"
-        '''
+        """

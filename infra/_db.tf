@@ -4,8 +4,8 @@ resource "google_sql_database_instance" "postgres" {
   region           = var.region
 
   settings {
-    tier = "db-f1-micro"
-    availability_type = "ZONAL"
+    tier                = "db-f1-micro"
+    availability_type   = "ZONAL"
   }
 
   deletion_protection = false

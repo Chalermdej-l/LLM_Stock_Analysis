@@ -2,10 +2,10 @@ import os
 from typing import Dict, List
 from dotenv import load_dotenv
 
-SQL_VARS = ['SQL_DATABASE', 'SQL_USER', 'SQL_PASSWORD', 'SQL_PORT', 'SQL_HOST']
+SQL_VARS = ["SQL_DATABASE", "SQL_USER", "SQL_PASSWORD", "SQL_PORT", "SQL_HOST"]
 
 
-def load_env(required_vars: List[str] = None, dotenv_path: str = './.env') -> Dict[str, str]:
+def load_env(required_vars: List[str] = None, dotenv_path: str = "./.env") -> Dict[str, str]:
     """
     Load the .env file and return the requested environment variables.
 
@@ -24,7 +24,7 @@ def load_env(required_vars: List[str] = None, dotenv_path: str = './.env') -> Di
     return env_vars
 
 
-def build_db_url(env_vars: Dict[str, str], driver: str = 'psycopg2') -> str:
+def build_db_url(env_vars: Dict[str, str], driver: str = "psycopg2") -> str:
     """Build a SQLAlchemy PostgreSQL URL from the SQL_* environment variables."""
     return (
         f"postgresql+{driver}://{env_vars['SQL_USER']}:{env_vars['SQL_PASSWORD']}"

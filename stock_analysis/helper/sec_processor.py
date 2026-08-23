@@ -12,6 +12,7 @@ import datetime
 
 pd.options.mode.chained_assignment = None
 
+
 class SecProcessor:
     BASE_URL = "https://data.sec.gov/submissions/"
     RATE_LIMIT = 5  # requests per second
@@ -20,9 +21,7 @@ class SecProcessor:
     def __init__(self, cik_list, user_agent, max_workers=5):
         self.cik_list = cik_list
         self.max_workers = max_workers
-        self.headers = {
-            "User-Agent": user_agent
-        }
+        self.headers = {"User-Agent": user_agent}
         self.logger = logging.getLogger(__name__)
 
     @sleep_and_retry
@@ -34,9 +33,9 @@ class SecProcessor:
             response = requests.get(url, headers=self.headers, timeout=(5, 30))
             response.raise_for_status()
             data = response.json()
-            filings = data['filings']['recent']
+            filings = data["filings"]["recent"]
             filings_df = pd.DataFrame(filings)
-            form_13f_df = filings_df[filings_df['form'] == '13F-HR']
+            form_13f_df = filings_df[filings_df["form"] == "13F-HR"]
             return form_13f_df.iloc[:1]
         except RequestException as e:
             self.logger.error(f"RequestException for CIK {cik}: {e}")
@@ -77,23 +76,23 @@ class SecProcessor:
             return None
 
     def _extract_xml_file_url(self, html_content, cik, accession_number):
-        soup = BeautifulSoup(html_content, 'html.parser')
-        table = soup.find('table', class_='tableFile')
+        soup = BeautifulSoup(html_content, "html.parser")
+        table = soup.find("table", class_="tableFile")
         if not table:
             self.logger.error(f"Table not found for CIK {cik}, accession number {accession_number}")
             return None
 
-        rows = table.find_all('tr')
+        rows = table.find_all("tr")
         for row in rows:
-            if 'information table' in row.text.lower():
-                return 'https://www.sec.gov' + row.find('a')['href']
+            if "information table" in row.text.lower():
+                return "https://www.sec.gov" + row.find("a")["href"]
 
         self.logger.error(f"Information table link not found for CIK {cik}, accession number {accession_number}")
         return None
 
     def _parse_xml_response(self, xml_content, date_part):
-        xml_soup = BeautifulSoup(xml_content, 'xml')
-        tables = xml_soup.find_all('table', {'summary': 'Form 13F-NT Header Information'})
+        xml_soup = BeautifulSoup(xml_content, "xml")
+        tables = xml_soup.find_all("table", {"summary": "Form 13F-NT Header Information"})
         if not tables:
             self.logger.error(f"XML tables not found in information table for date part {date_part}")
             return None
@@ -107,31 +106,56 @@ class SecProcessor:
         return df
 
     def _clean_dataframe(self, df, date_part):
-        column = ['name_of_issuer', 'title_of_class', 'cusip', 'figi', 'value', 'prn_amt', 'prn',
-                  'put_call', 'discretion', 'manager', 'voting_sole', 'voting_shared', 'voting_none']
-        column_2 = ['name_of_issuer', 'title_of_class', 'cusip', 'value', 'prn_amt', 'prn',
-                    'put_call', 'discretion', 'manager', 'voting_sole', 'voting_shared', 'voting_none']
-        col_int = ['value', 'prn_amt', 'voting_sole', 'voting_shared', 'voting_none']
+        column = [
+            "name_of_issuer",
+            "title_of_class",
+            "cusip",
+            "figi",
+            "value",
+            "prn_amt",
+            "prn",
+            "put_call",
+            "discretion",
+            "manager",
+            "voting_sole",
+            "voting_shared",
+            "voting_none",
+        ]
+        column_2 = [
+            "name_of_issuer",
+            "title_of_class",
+            "cusip",
+            "value",
+            "prn_amt",
+            "prn",
+            "put_call",
+            "discretion",
+            "manager",
+            "voting_sole",
+            "voting_shared",
+            "voting_none",
+        ]
+        col_int = ["value", "prn_amt", "voting_sole", "voting_shared", "voting_none"]
 
         col_length = len(df.columns)
         if col_length == 13:
             df.columns = column
         else:
             df.columns = column_2
-            df['figi'] = np.nan
+            df["figi"] = np.nan
             df = df[column]
 
-        df['trans_date'] = datetime.datetime.strptime(date_part, '%Y-%m-%d')
-        df[col_int] = df[col_int].apply(pd.to_numeric, errors='coerce')
+        df["trans_date"] = datetime.datetime.strptime(date_part, "%Y-%m-%d")
+        df[col_int] = df[col_int].apply(pd.to_numeric, errors="coerce")
 
         for col in df.columns:
-            df[col] = df[col].apply(lambda x: x if pd.isna(x) else str(x).replace('\n', ' '))
+            df[col] = df[col].apply(lambda x: x if pd.isna(x) else str(x).replace("\n", " "))
 
-        df['value'] = df['value'].apply(lambda x: x if not isinstance(x, str) or ',' not in x else x.split(','))
-        df = df.explode('value')
-        df['value'] = df['value'].apply(lambda x: x.strip())
+        df["value"] = df["value"].apply(lambda x: x if not isinstance(x, str) or "," not in x else x.split(","))
+        df = df.explode("value")
+        df["value"] = df["value"].apply(lambda x: x.strip())
 
-        df['date_insert'] = datetime.datetime.today().strftime('%Y-%m-%d')
+        df["date_insert"] = datetime.datetime.today().strftime("%Y-%m-%d")
         return df
 
     def fetch_fund_data(self, cik):
@@ -141,7 +165,7 @@ class SecProcessor:
 
         fund_data = []
         for _, row in form_13f_df.iterrows():
-            details_df = self.get_13f_details(row['accessionNumber'], cik, row['filingDate'])
+            details_df = self.get_13f_details(row["accessionNumber"], cik, row["filingDate"])
             if not details_df.empty:
                 fund_data.append(details_df)
         time.sleep(1)
@@ -158,15 +182,15 @@ class SecProcessor:
                     data = future.result()
                     results.extend(data)
                 except Exception as exc:
-                    self.logger.error(f'{cik} generated an exception: {exc}')
+                    self.logger.error(f"{cik} generated an exception: {exc}")
 
         if results:
             df_all = pd.concat(results, ignore_index=True)
-            df_all.replace('None', pd.NA, inplace=True)
-            self.logger.info('All data was collected.')
+            df_all.replace("None", pd.NA, inplace=True)
+            self.logger.info("All data was collected.")
             return df_all
         else:
-            self.logger.warning('No data was collected.')
+            self.logger.warning("No data was collected.")
 
         end_time = time.time()
-        self.logger.info(f'Total execution time: {end_time - start_time:.2f} seconds')
+        self.logger.info(f"Total execution time: {end_time - start_time:.2f} seconds")

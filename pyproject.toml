@@ -10,3 +10,11 @@ requires-python = ">=3.10"
 
 [tool.setuptools.packages.find]
 include = ["stock_analysis*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

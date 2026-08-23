@@ -1,13 +1,26 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, BigInteger, VARCHAR , inspect, text
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    Float,
+    Boolean,
+    DateTime,
+    BigInteger,
+    VARCHAR,
+    inspect,
+    text,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import TypeEngine
 import pandas as pd
 
+
 class CloudSQLDatabase:
     def __init__(self, user, password, host, port, database, big_flag=False, logger=None):
         self.logger = logger
-        self.database_uri = f'postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}'
+        self.database_uri = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
         self.engine = create_engine(self.database_uri)
         self.Base = declarative_base()
         self.Session = sessionmaker(bind=self.engine)
@@ -20,8 +33,8 @@ class CloudSQLDatabase:
             return None
 
         class_attrs = {
-            '__tablename__': table_name,
-            'id': Column(Integer, primary_key=True, autoincrement=True),
+            "__tablename__": table_name,
+            "id": Column(Integer, primary_key=True, autoincrement=True),
         }
 
         for column_name, column_type in columns.items():
@@ -42,7 +55,7 @@ class CloudSQLDatabase:
 
         inspector = inspect(self.engine)
         existing_columns = inspector.get_columns(table_name)
-        existing_column_names = {col['name'].lower() for col in existing_columns}
+        existing_column_names = {col["name"].lower() for col in existing_columns}
 
         new_columns = []
         for column in df.columns:
@@ -52,30 +65,31 @@ class CloudSQLDatabase:
         if new_columns:
             with self.engine.connect() as conn:
                 for column_name, column_type in new_columns:
-                    alter_query = text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {column_type.__visit_name__.upper()}')
+                    alter_query = text(
+                        f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {column_type.__visit_name__.upper()}'
+                    )
                     conn.execute(alter_query)
                     conn.commit()
             self.logger.info(f"Table '{table_name}' updated with new columns: {[col[0] for col in new_columns]}")
 
-            
     def _get_sqlalchemy_type(self, dtype):
         if self.big_flag:
             dtype_map = {
-                'int64': BigInteger,
-                'Int64': BigInteger,
-                'float64': Float,
-                'object': VARCHAR,
-                'bool': Boolean,
-                'datetime64': DateTime
+                "int64": BigInteger,
+                "Int64": BigInteger,
+                "float64": Float,
+                "object": VARCHAR,
+                "bool": Boolean,
+                "datetime64": DateTime,
             }
         else:
             dtype_map = {
-                'int64': Integer,
-                'Int64': Integer,
-                'float64': Float,
-                'object': VARCHAR,
-                'bool': Boolean,
-                'datetime64': DateTime
+                "int64": Integer,
+                "Int64": Integer,
+                "float64": Float,
+                "object": VARCHAR,
+                "bool": Boolean,
+                "datetime64": DateTime,
             }
         return dtype_map.get(str(dtype), String)
 
@@ -92,21 +106,21 @@ class CloudSQLDatabase:
         try:
             # Preprocess the DataFrame
             for column in data.columns:
-                if data[column].dtype == 'object':
+                if data[column].dtype == "object":
                     # If the column contains lists, join them into strings
-                    data[column] = data[column].apply(lambda x: ','.join(map(str, x)) if isinstance(x, list) else x)
-                
+                    data[column] = data[column].apply(lambda x: ",".join(map(str, x)) if isinstance(x, list) else x)
+
                 # Convert NaN to None for SQL compatibility
                 data[column] = data[column].where(pd.notnull(data[column]), None)
 
             # Convert 'prn_amt' to integer if it's not already
-            if 'prn_amt' in data.columns:
-                data['prn_amt'] = pd.to_numeric(data['prn_amt'], errors='coerce').astype('Int64')
+            if "prn_amt" in data.columns:
+                data["prn_amt"] = pd.to_numeric(data["prn_amt"], errors="coerce").astype("Int64")
 
             # Map original column names to lowercase with underscores for insertion
-            data.columns = [col.replace(' ', '_').lower() for col in data.columns]
+            data.columns = [col.replace(" ", "_").lower() for col in data.columns]
 
-            data.to_sql(table_name, self.engine, if_exists='append', index=False)
+            data.to_sql(table_name, self.engine, if_exists="append", index=False)
             self.logger.info(f"Data inserted successfully into '{table_name}'")
         except Exception as e:
             self.logger.error(f"Error while inserting data: {e}")
@@ -114,7 +128,7 @@ class CloudSQLDatabase:
 
     def fetch_data(self, query):
         if isinstance(query, dict):
-            query = query['query']
+            query = query["query"]
         try:
             df = pd.read_sql(text(query), self.engine)
             return df
